@@ -14,28 +14,48 @@ from transformers import DistilBertTokenizer, DistilBertModel
 class ListeningDataset(Dataset):
     def __init__(self, references, scans, vocab, max_seq_len, points_per_object, max_distractors,
                  class_to_idx=None, object_transformation=None,
-                 visualization=False):
+                 visualization=False, anchors_mode='none', lang_mode=False):
 
         self.references = references
         self.scans = scans
         self.max_seq_len = max_seq_len
         self.points_per_object = points_per_object
         self.max_distractors = max_distractors
-        self.max_context_size = self.max_distractors + 1  # to account for the target.
+        self.max_context_size = self.max_distractors + 4  # to account for the target and anchors.
         self.class_to_idx = class_to_idx
         self.visualization = visualization
         self.object_transformation = object_transformation
+        self.anchors_mode = anchors_mode
+        self.lang_mode = lang_mode
+
         if not check_segmented_object_order(scans):
             raise ValueError
 
     def __len__(self):
         return len(self.references)
-
+    
+    def get_anchor_ids(self, ref):
+        anchor_ids = ref['anchor_ids']
+        # Check if anchor_ids is in the format "[3, 26]"
+        if anchor_ids.startswith('[') and anchor_ids.endswith(']'):
+            # Extract the numbers from the string
+            numbers = anchor_ids[1:-1].split(',')
+            # Convert the numbers to integers
+            anchor_ids = [int(num.strip()) for num in numbers]
+        else:
+            # If anchor_ids is not in the expected format, assume it's a single number
+            anchor_ids = [int(anchor_ids)]
+        return anchor_ids
+    
     def get_reference_data(self, index):
         ref = self.references.loc[index]
         scan_id = ref['scan_id']
         scan = self.scans[ref['scan_id']]
         target = scan.three_d_objects[ref['target_id']]
+        if self.anchors_mode != 'none':
+            anchors = []
+            for anchor_id in self.get_anchor_ids(ref):
+                anchors.append(scan.three_d_objects[anchor_id])
         # sega_update: 使用原始的token
         #tokens = np.array(self.vocab.encode(ref['tokens'], self.max_seq_len), dtype=np.long)
         ori_tokens = ref['tokens']
@@ -46,18 +66,31 @@ class ListeningDataset(Dataset):
         # tokens = np.array([102]*(self.max_seq_len + 2 + self.max_context_size * 2))
         # tokens[:min(self.max_seq_len + 2, len(emb))] = emb[:min(self.max_seq_len + 2, len(emb))]
         is_nr3d = ref['dataset'] == 'nr3d'
+        if self.anchors_mode != 'none':
+            return scan, target, tokens, is_nr3d, scan_id, anchors
+        else:
+            return scan, target, tokens, is_nr3d, scan_id, None
 
-        return scan, target, tokens, is_nr3d, scan_id
-
-    def prepare_distractors(self, scan, target):
+    def prepare_distractors(self, scan, target, anchors=None):
         target_label = target.instance_label
 
         # First add all objects with the same instance-label as the target
         distractors = [o for o in scan.three_d_objects if
                        (o.instance_label == target_label and (o != target))]
-
+        if self.anchors_mode != 'none':
+            anchor_labels = [anchor.instance_label for anchor in anchors]
+            anchors_distractors = []
+            for anchor in anchors:
+                anchor_distractors = [ o for o in scan.three_d_objects if
+                            (o.instance_label == anchor.instance_label and (o != anchor)) ]
+                anchors_distractors = anchors_distractors + anchor_distractors
+                
+            distractors = distractors + anchors_distractors
         # Then all more objects up to max-number of distractors
         already_included = {target_label}
+        if self.anchors_mode != 'none':
+            already_included.update(anchor_labels)
+
         clutter = [o for o in scan.three_d_objects if o.instance_label not in already_included]
         np.random.shuffle(clutter)
 
@@ -68,15 +101,27 @@ class ListeningDataset(Dataset):
         return distractors
 
     def __getitem__(self, index):
+        # import pdb; pdb.set_trace()
+
         res = dict()
-        scan, target, tokens, is_nr3d, scan_id = self.get_reference_data(index)
+        scan, target, tokens, is_nr3d, scan_id, anchors = self.get_reference_data(index)
         # Make a context of distractors
-        context = self.prepare_distractors(scan, target)
+        context = self.prepare_distractors(scan, target, anchors)
 
         # Add target object in 'context' list
         target_pos = np.random.randint(len(context) + 1)
         context.insert(target_pos, target)
+        anchors_pos = []
+        if self.anchors_mode != 'none':
+            for anchor in anchors:
+                anchor_pos = np.random.randint(len(context) + 1)
+                context.insert(anchor_pos, anchor)
+                anchors_pos.append(anchor_pos)
 
+            # pad with non existing anchor
+            if self.anchors_mode == 'all':
+                if len(anchors_pos)<2:
+                    anchors_pos = anchors_pos + [len(context)+1]*(2-len(anchors_pos))
         # sample point/color for them
         samples = np.array([sample_scan_object(o, self.points_per_object) for o in context])
 
@@ -100,13 +145,19 @@ class ListeningDataset(Dataset):
         res['objects'] = pad_samples(samples, self.max_context_size)
 
         # Get a mask indicating which objects have the same instance-class as the target.
-        target_class_mask = np.zeros(self.max_context_size, dtype=np.bool)
+        target_class_mask = np.zeros(self.max_context_size, dtype=np.bool_)
         target_class_mask[:len(context)] = [target.instance_label == o.instance_label for o in context]
 
 
 
         res['target_class'] = self.class_to_idx[target.instance_label]
+        if self.anchors_mode != 'none':
+            anchor_classes = [ self.class_to_idx[anchor.instance_label] for anchor in anchors ]
+            if self.lang_mode and len(anchor_classes)<2:
+                anchor_classes = anchor_classes + [len(self.class_to_idx)]*(2-len(anchors_pos))
+            res['anchor_classes'] = anchor_classes
         res['target_pos'] = target_pos
+        res['anchors_pos'] = anchors_pos
         res['target_class_mask'] = target_class_mask
         res['tokens'] = tokens
         res['is_nr3d'] = is_nr3d
@@ -176,7 +227,10 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb):
                                    max_distractors=max_distractors,
                                    class_to_idx=class_to_idx,
                                    object_transformation=object_transformation,
-                                   visualization=args.mode == 'evaluate')
+                                   visualization=args.mode == 'evaluate', 
+                                   anchors_mode=args.anchors,
+                                   lang_mode=args.predict_lang_anchors)
+                                   
 
         seed = None
         if split == 'test':

@@ -39,7 +39,7 @@ def parse_arguments(notebook_options=None):
     #
     # Dataset-oriented arguments
     #
-    parser.add_argument('--max-distractors', type=int, default=51,
+    parser.add_argument('--max-distractors', type=int, default=52,
                         help='Maximum number of distracting objects to be drawn from a scan.')
     parser.add_argument('--max-seq-len', type=int, default=24,
                         help='utterances with more tokens than this they will be ignored.')
@@ -56,6 +56,9 @@ def parse_arguments(notebook_options=None):
     # Training arguments
     #
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'evaluate', 'vis'])
+    parser.add_argument('--predict-lang-anchors', type=str2bool, default=False)
+    parser.add_argument('--anchors', type=str, default='all', choices=['all', 'present', 'none'], 
+                        help='train using all the anchors and a non present class for the prediction, only the mentioned anchors with non extra, or with no anchors')
     parser.add_argument('--max-train-epochs', type=int, default=100, help='number of training epochs. [default: 100]')
     parser.add_argument('--n-workers', type=int, default=-1,
                         help='number of data loading workers [default: -1 is all cores available -1.]')
@@ -67,7 +70,7 @@ def parse_arguments(notebook_options=None):
     # Model arguments
     #
     parser.add_argument('--model', type=str, default='referIt3DNet', choices=['referIt3DNet_transformer',])
-    parser.add_argument('--bert-pretrain-path', type=str, default="/mnt/proj58/sjhuang/grounding3d/distillbert")
+    parser.add_argument('--bert-pretrain-path', type=str, default="bert-base-uncased")
     
     parser.add_argument('--view_number', type=int, default=4)
     parser.add_argument('--rotate_number', type=int, default=4)

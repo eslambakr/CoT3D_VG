@@ -25,7 +25,8 @@ class ReferIt3DNet_transformer(nn.Module):
                  args,
                  n_obj_classes,
                  class_name_tokens,
-                 ignore_index):
+                 ignore_index,
+                 tokenizer):
 
         super().__init__()
 
@@ -47,6 +48,11 @@ class ReferIt3DNet_transformer(nn.Module):
         self.dropout_rate = args.dropout_rate
         self.lang_cls_alpha = args.lang_cls_alpha
         self.obj_cls_alpha = args.obj_cls_alpha
+        self.anchors_mode = args.anchors
+        self.predict_lang_anchors = args.predict_lang_anchors
+        self.ref_out = 3 if self.anchors_mode != 'none' else 1
+        self.lang_out = 3 if self.predict_lang_anchors != 'none' else 1
+        self.n_obj_classes = n_obj_classes
 
         self.object_encoder = PointNetPP(sa_n_points=[32, 16, None],
                                         sa_n_samples=[[32], [32], [None]],
@@ -62,13 +68,18 @@ class ReferIt3DNet_transformer(nn.Module):
             nhead=self.decoder_nhead_num, dim_feedforward=2048, activation="gelu"), num_layers=self.decoder_layer_num)
 
         # Classifier heads
-        self.language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim), 
+        if self.predict_lang_anchors:
+            self.language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim), 
+                                        nn.ReLU(), nn.Dropout(self.dropout_rate), 
+                                        nn.Linear(self.inner_dim, n_obj_classes * 3))
+        else:   
+            self.language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim), 
                                         nn.ReLU(), nn.Dropout(self.dropout_rate), 
                                         nn.Linear(self.inner_dim, n_obj_classes))
 
         self.object_language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim), 
                                                 nn.ReLU(), nn.Dropout(self.dropout_rate), 
-                                                nn.Linear(self.inner_dim, 1))
+                                                nn.Linear(self.inner_dim, self.ref_out))
 
         if not self.label_lang_sup:
             self.obj_clf = MLP(self.inner_dim, [self.object_dim, self.object_dim, n_obj_classes], dropout_rate=self.dropout_rate)
@@ -84,8 +95,9 @@ class ReferIt3DNet_transformer(nn.Module):
         )
 
         self.class_name_tokens = class_name_tokens
+        self.tokenizer= tokenizer
 
-        self.logit_loss = nn.CrossEntropyLoss()
+        self.logit_loss = [nn.CrossEntropyLoss()]*3
         self.lang_logits_loss = nn.CrossEntropyLoss()
         self.class_logits_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
 
@@ -127,9 +139,21 @@ class ReferIt3DNet_transformer(nn.Module):
         return input_points, boxs
 
     def compute_loss(self, batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS=None):
-        referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
+        if self.anchors_mode != 'none':
+            referential_loss = self.logit_loss[0](LOGITS[:, :, 0], batch['target_pos'])
+            for i, anchor_pos in enumerate(batch['anchors_pos']):
+                referential_loss += self.logit_loss[i+1](LOGITS[:, :, i+1], anchor_pos) * 0.5
+        else:
+            referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
+        
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
-        lang_clf_loss = self.lang_logits_loss(LANG_LOGITS, batch['target_class'])
+        if self.predict_lang_anchors:
+            LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, 3)
+            lang_clf_loss = self.lang_logits_loss(LANG_LOGITS[:,:,0], batch['target_class'])
+            for i, anchor_pos in enumerate(batch['anchor_classes']):
+                referential_loss += self.logit_loss[i+1](LANG_LOGITS[:, :, i+1], anchor_pos)
+        else:
+            lang_clf_loss = self.lang_logits_loss(LANG_LOGITS, batch['target_class'])
         total_loss = referential_loss + self.obj_cls_alpha * obj_clf_loss + self.lang_cls_alpha * lang_clf_loss
         return total_loss
 
@@ -160,6 +184,7 @@ class ReferIt3DNet_transformer(nn.Module):
             CLASS_LOGITS = self.obj_clf(obj_feats.reshape(B*N,-1)).reshape(B,N,-1)
 
         ## language_encoding
+        
         lang_tokens = batch['lang_tokens']
         lang_infos = self.language_encoder(**lang_tokens)[0]
 
@@ -171,7 +196,7 @@ class ReferIt3DNet_transformer(nn.Module):
         cat_infos = obj_infos.reshape(B*self.view_number, -1, self.inner_dim)
         mem_infos = lang_infos[:, None].repeat(1, self.view_number, 1, 1).reshape(B*self.view_number, -1, self.inner_dim)
         out_feats = self.refer_encoder(cat_infos.transpose(0, 1), mem_infos.transpose(0, 1)).transpose(0, 1).reshape(B, self.view_number, -1, self.inner_dim)
-
+        # print(out_feats.shape)
         ## view_aggregation
         refer_feat = out_feats
         if self.aggregate_type=='avg':
@@ -180,7 +205,8 @@ class ReferIt3DNet_transformer(nn.Module):
             agg_feats = (refer_feat / self.view_number).sum(dim=1) + refer_feat.max(dim=1).values
         else:
             agg_feats = refer_feat.max(dim=1).values
-
+        # print(agg_feats.shape)
+        # print('--------------------------------')
         # <LOSS>: ref_cls
         LOGITS = self.object_language_clf(agg_feats).squeeze(-1)
         LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS)

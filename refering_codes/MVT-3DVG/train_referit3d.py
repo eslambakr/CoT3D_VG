@@ -70,7 +70,10 @@ if __name__ == '__main__':
     # Losses:
     criteria = dict()
     # Prepare the Listener
-    n_classes = len(class_to_idx) - 1  # -1 to ignore the <pad> class
+    if args.predict_lang_anchors:
+        n_classes = len(class_to_idx)   # include the <pad> class 
+    else:
+        n_classes = len(class_to_idx) - 1  # -1 to ignore the <pad> class
     pad_idx = class_to_idx['pad']
     # Object-type classification
     class_name_list = []
@@ -83,9 +86,9 @@ if __name__ == '__main__':
         class_name_tokens.data[name] = class_name_tokens.data[name].cuda()
 
     gpu_num = len(args.gpu.strip(',').split(','))
-
+    # import pdb; pdb.set_trace()
     if args.model == 'referIt3DNet_transformer':
-        model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx)
+        model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx, tokenizer=tokenizer)
     else:
         assert False
 

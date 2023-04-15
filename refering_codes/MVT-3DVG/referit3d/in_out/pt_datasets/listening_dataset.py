@@ -21,7 +21,7 @@ class ListeningDataset(Dataset):
         self.max_seq_len = max_seq_len
         self.points_per_object = points_per_object
         self.max_distractors = max_distractors
-        self.max_context_size = self.max_distractors + 4  # to account for the target and anchors.
+        self.max_context_size = self.max_distractors + (4 if anchors_mode!='none' else 1)   # to account for the target and anchors.
         self.class_to_idx = class_to_idx
         self.visualization = visualization
         self.object_transformation = object_transformation
@@ -151,8 +151,9 @@ class ListeningDataset(Dataset):
 
 
         res['target_class'] = self.class_to_idx[target.instance_label]
-        if self.anchors_mode != 'none':
+        if self.lang_mode or self.anchors_mode != 'none':
             anchor_classes = [ self.class_to_idx[anchor.instance_label] for anchor in anchors ]
+        if self.anchors_mode != 'none':
             if self.lang_mode and len(anchor_classes)<2:
                 anchor_classes = anchor_classes + [len(self.class_to_idx)]*(2-len(anchors_pos))
             res['anchor_classes'] = anchor_classes

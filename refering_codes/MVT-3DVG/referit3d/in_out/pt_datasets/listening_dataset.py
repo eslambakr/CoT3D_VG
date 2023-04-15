@@ -52,7 +52,7 @@ class ListeningDataset(Dataset):
         scan_id = ref['scan_id']
         scan = self.scans[ref['scan_id']]
         target = scan.three_d_objects[ref['target_id']]
-        if self.anchors_mode != 'none':
+        if self.anchors_mode != 'none' or self.lang_mode:
             anchors = []
             for anchor_id in self.get_anchor_ids(ref):
                 anchors.append(scan.three_d_objects[anchor_id])
@@ -66,7 +66,7 @@ class ListeningDataset(Dataset):
         # tokens = np.array([102]*(self.max_seq_len + 2 + self.max_context_size * 2))
         # tokens[:min(self.max_seq_len + 2, len(emb))] = emb[:min(self.max_seq_len + 2, len(emb))]
         is_nr3d = ref['dataset'] == 'nr3d'
-        if self.anchors_mode != 'none':
+        if self.anchors_mode != 'none' or self.lang_mode:
             return scan, target, tokens, is_nr3d, scan_id, anchors
         else:
             return scan, target, tokens, is_nr3d, scan_id, None
@@ -151,11 +151,10 @@ class ListeningDataset(Dataset):
 
 
         res['target_class'] = self.class_to_idx[target.instance_label]
-        if self.lang_mode or self.anchors_mode != 'none':
+        if self.anchors_mode != 'none' or self.lang_mode:
             anchor_classes = [ self.class_to_idx[anchor.instance_label] for anchor in anchors ]
-        if self.anchors_mode != 'none':
             if self.lang_mode and len(anchor_classes)<2:
-                anchor_classes = anchor_classes + [len(self.class_to_idx)]*(2-len(anchors_pos))
+                anchor_classes = anchor_classes + [len(self.class_to_idx)]*(2-len(anchor_classes))
             res['anchor_classes'] = anchor_classes
         res['target_pos'] = target_pos
         res['anchors_pos'] = anchors_pos

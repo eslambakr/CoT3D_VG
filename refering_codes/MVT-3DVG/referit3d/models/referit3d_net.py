@@ -96,9 +96,8 @@ class ReferIt3DNet_transformer(nn.Module):
 
         self.class_name_tokens = class_name_tokens
         self.tokenizer= tokenizer
-
-        self.logit_loss = [nn.CrossEntropyLoss()]*3
-        self.lang_logits_loss = nn.CrossEntropyLoss()
+        self.logit_loss = ([nn.CrossEntropyLoss()]*3) if self.anchors_mode != 'none' else nn.CrossEntropyLoss()
+        self.lang_logits_loss = ([nn.CrossEntropyLoss()]*3) if self.predict_lang_anchors else nn.CrossEntropyLoss()
         self.class_logits_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
 
     @torch.no_grad()
@@ -149,9 +148,9 @@ class ReferIt3DNet_transformer(nn.Module):
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
         if self.predict_lang_anchors:
             LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, 3)
-            lang_clf_loss = self.lang_logits_loss(LANG_LOGITS[:,:,0], batch['target_class'])
-            for i, anchor_pos in enumerate(batch['anchor_classes']):
-                referential_loss += self.logit_loss[i+1](LANG_LOGITS[:, :, i+1], anchor_pos)
+            lang_clf_loss = self.lang_logits_loss[0](LANG_LOGITS[:,:,0], batch['target_class'])
+            for i, anchor_cls in enumerate(batch['anchor_classes']):
+                lang_clf_loss += self.lang_logits_loss[i+1](LANG_LOGITS[:, :, i+1], anchor_cls)
         else:
             lang_clf_loss = self.lang_logits_loss(LANG_LOGITS, batch['target_class'])
         total_loss = referential_loss + self.obj_cls_alpha * obj_clf_loss + self.lang_cls_alpha * lang_clf_loss

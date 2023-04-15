@@ -71,9 +71,10 @@ if __name__ == '__main__':
     criteria = dict()
     # Prepare the Listener
     if args.predict_lang_anchors:
-        n_classes = len(class_to_idx)   # include the <pad> class 
+        n_classes = len(class_to_idx)+1   # include the <pad> class and a new class for no obj
     else:
         n_classes = len(class_to_idx) - 1  # -1 to ignore the <pad> class
+    print('number of classes:', n_classes)
     pad_idx = class_to_idx['pad']
     # Object-type classification
     class_name_list = []

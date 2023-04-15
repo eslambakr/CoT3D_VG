@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=run_v_train_mvt_all_lang_testing
+#SBATCH --job-name=run_v_train_mvt_lang
 #SBATCH -N 1
-#SBATCH -o /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_all_lang_testing.out
-#SBATCH -e /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_all_lang_testing.err
+#SBATCH -o /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang.out
+#SBATCH -e /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang.err
 #SBATCH --mail-type=ALL
-#SBATCH --time=1:00:00
+#SBATCH --time=60:00:00
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:v100:1
@@ -31,5 +31,5 @@ python train_referit3d.py \
     --rotate_number 4 \
     --label-lang-sup True \
     --predict-lang-anchors True \
-    --anchors "all"
+    --anchors "none"
 

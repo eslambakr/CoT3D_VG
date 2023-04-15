@@ -90,7 +90,9 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         batch_size = target.size(0)  # B x N_Objects
         total_loss_mtr.update(LOSS.item(), batch_size)
 
-        predictions = torch.argmax(res['logits'], dim=1)[:,0]
+        predictions = torch.argmax(res['logits'], dim=1)
+        if args.anchors != "none":
+            predictions = predictions[:,0]
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
@@ -167,7 +169,9 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         batch_size = target.size(0)  # B x N_Objects
         total_loss_mtr.update(LOSS.item(), batch_size)
 
-        predictions = torch.argmax(res['logits'], dim=1)[:, 0]
+        predictions = torch.argmax(res['logits'], dim=1)
+        if args.anchors != "none":
+            predictions = predictions[:,0]
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
@@ -270,7 +274,7 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
 
 
 @torch.no_grad()
-def save_predictions_for_visualization(model, data_loader, device, channel_last, seed=2020):
+def save_predictions_for_visualization(args, model, data_loader, device, channel_last, seed=2020):
     """
     Return the predictions along with the scan data for further visualization
     """
@@ -301,14 +305,15 @@ def save_predictions_for_visualization(model, data_loader, device, channel_last,
 
         batch_size = batch['target_pos'].size(0)
         for i in range(batch_size):
+            logits = res['logits'][:,0] if args.anchors!='none' else res['logits']
             res_list.append({
                 'scan_id': batch['scan_id'][i],
                 'utterance': batch['utterance'][i],
                 'target_pos': batch['target_pos'][i].cpu(),
-                'confidences': res['logits'][:,0][i].cpu().numpy(),
+                'confidences': logits[i].cpu().numpy(),
                 'bboxes': batch['objects_bboxes'][i].cpu().numpy(),
                 'predicted_classes': res['class_logits'][i].argmax(dim=-1).cpu(),
-                'predicted_target_pos': res['logits'][:,0][i].argmax(-1).cpu(),
+                'predicted_target_pos': logits[i].argmax(-1).cpu(),
                 'object_ids': batch['object_ids'][i],
                 'context_size': batch['context_size'][i],
                 'is_easy': batch['is_easy'][i]

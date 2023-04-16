@@ -48,8 +48,10 @@ class ReferIt3DNet_transformer(nn.Module):
         self.dropout_rate = args.dropout_rate
         self.lang_cls_alpha = args.lang_cls_alpha
         self.obj_cls_alpha = args.obj_cls_alpha
+        
         self.anchors_mode = args.anchors
         self.predict_lang_anchors = args.predict_lang_anchors
+
         self.ref_out = 3 if self.anchors_mode != 'none' else 1
         self.lang_out = 3 if self.predict_lang_anchors != 'none' else 1
         self.n_obj_classes = n_obj_classes
@@ -95,7 +97,6 @@ class ReferIt3DNet_transformer(nn.Module):
         )
 
         self.class_name_tokens = class_name_tokens
-        self.tokenizer= tokenizer
         self.logit_loss = ([nn.CrossEntropyLoss()]*3) if self.anchors_mode != 'none' else nn.CrossEntropyLoss()
         self.lang_logits_loss = ([nn.CrossEntropyLoss()]*3) if self.predict_lang_anchors else nn.CrossEntropyLoss()
         self.class_logits_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
@@ -138,13 +139,14 @@ class ReferIt3DNet_transformer(nn.Module):
         return input_points, boxs
 
     def compute_loss(self, batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS=None):
+        # TODO: Eslam: Fix anchors issue by making it independent on anchors order.
         if self.anchors_mode != 'none':
             referential_loss = self.logit_loss[0](LOGITS[:, :, 0], batch['target_pos'])
-            for i, anchor_pos in enumerate(batch['anchors_pos']):
-                referential_loss += self.logit_loss[i+1](LOGITS[:, :, i+1], anchor_pos) * 0.5
+            for i in range(len(batch['anchors_pos'][0])):
+                referential_loss += self.logit_loss[i + 1](LOGITS[:, :, i + 1], batch['anchors_pos'][:, i])
+                break  # TODO: Eslam: make it generic instead of ignore last anchor
         else:
             referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
-        
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
         if self.predict_lang_anchors:
             LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, 3)
@@ -164,14 +166,16 @@ class ReferIt3DNet_transformer(nn.Module):
         self.device = self.obj_feature_mapping[0].weight.device
 
         ## rotation augmentation and multi_view generation
-        obj_points, boxs = self.aug_input(batch['objects'], batch['box_info'])
+        obj_points, boxs = self.aug_input(batch['objects'], batch['box_info'])  # [128, 52, 1024, 6], [128, 4, 52, 4]
         B,N,P = obj_points.shape[:3]
 
         ## obj_encoding
+        #  torch.Size([128, 52, 1024, 6]) --> torch.Size([128, 52, 768])
         objects_features = get_siamese_features(self.object_encoder, obj_points, aggregator=torch.stack)
         
         ## obj_encoding
-        obj_feats = self.obj_feature_mapping(objects_features)
+        obj_feats = self.obj_feature_mapping(objects_features)  # torch.Size([128, 52, 768])
+        # [128, 4, 52, 4] --> [128, 4, 52, 768]
         box_infos = self.box_feature_mapping(boxs)
         obj_infos = obj_feats[:, None].repeat(1, self.view_number, 1, 1) + box_infos
 
@@ -180,22 +184,25 @@ class ReferIt3DNet_transformer(nn.Module):
             label_lang_infos = self.language_encoder(**self.class_name_tokens)[0][:,0]
             CLASS_LOGITS = torch.matmul(obj_feats.reshape(B*N,-1), label_lang_infos.permute(1,0)).reshape(B,N,-1)        
         else:
-            CLASS_LOGITS = self.obj_clf(obj_feats.reshape(B*N,-1)).reshape(B,N,-1)
+            CLASS_LOGITS = self.obj_clf(obj_feats.reshape(B*N,-1)).reshape(B,N,-1)  # [128, 52, 608]
 
         ## language_encoding
         
         lang_tokens = batch['lang_tokens']
-        lang_infos = self.language_encoder(**lang_tokens)[0]
+        lang_infos = self.language_encoder(**lang_tokens)[0]  # [128, 20, 768]
 
         # <LOSS>: lang_cls
         lang_features = lang_infos[:,0]
-        LANG_LOGITS = self.language_clf(lang_infos[:,0])
+        LANG_LOGITS = self.language_clf(lang_infos[:,0])  # [128, 607]
         
         ## multi-modal_fusion
-        cat_infos = obj_infos.reshape(B*self.view_number, -1, self.inner_dim)
-        mem_infos = lang_infos[:, None].repeat(1, self.view_number, 1, 1).reshape(B*self.view_number, -1, self.inner_dim)
-        out_feats = self.refer_encoder(cat_infos.transpose(0, 1), mem_infos.transpose(0, 1)).transpose(0, 1).reshape(B, self.view_number, -1, self.inner_dim)
-        # print(out_feats.shape)
+        cat_infos = obj_infos.reshape(B*self.view_number, -1, self.inner_dim)  # [512, 52, 768]
+        mem_infos = lang_infos[:, None].repeat(1, self.view_number, 1, 1).reshape(B*self.view_number,
+                                                                                  -1, self.inner_dim)  # [512, 20, 768]
+        out_feats = self.refer_encoder(cat_infos.transpose(0, 1),
+                                       mem_infos.transpose(0, 1)).transpose(0, 1).reshape(B, self.view_number, -1,
+                                                                                          self.inner_dim)  # [128, 4, 52, 768]
+
         ## view_aggregation
         refer_feat = out_feats
         if self.aggregate_type=='avg':
@@ -204,10 +211,11 @@ class ReferIt3DNet_transformer(nn.Module):
             agg_feats = (refer_feat / self.view_number).sum(dim=1) + refer_feat.max(dim=1).values
         else:
             agg_feats = refer_feat.max(dim=1).values
-        # print(agg_feats.shape)
-        # print('--------------------------------')
-        # <LOSS>: ref_cls
-        LOGITS = self.object_language_clf(agg_feats).squeeze(-1)
-        LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS)
+        # print("agg_feats: ", agg_feats.shape)  # [128, 52, 768]
 
+        # <LOSS>: ref_cls
+        LOGITS = self.object_language_clf(agg_feats).squeeze(-1)  # [128, 52]
+        LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS)  # []
+        if self.anchors_mode != 'none':
+            LOGITS = LOGITS[:,:,0]
         return LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS

@@ -58,15 +58,14 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
     for batch in tqdm.tqdm(data_loader):
         # Move data to gpu
         for k in batch_keys:
-            if isinstance(batch[k],list) and k in extras:
+            if isinstance(batch[k], list) and k in extras:
                 for i, _ in enumerate(batch[k]):
                     batch[k][i] = batch[k][i].to(device)
-            else: 
-                if isinstance(batch[k],list): 
+            else:
+                if isinstance(batch[k], list):
                     continue
                 batch[k] = batch[k].to(device)
-        # if args.object_encoder == 'pnet':
-        #     batch['objects'] = batch['objects'].permute(0, 1, 3, 2)
+
         lang_tokens = tokenizer(batch['tokens'], return_tensors='pt', padding=True)
         for name in lang_tokens.data:
             lang_tokens.data[name] = lang_tokens.data[name].cuda()
@@ -91,8 +90,7 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         total_loss_mtr.update(LOSS.item(), batch_size)
 
         predictions = torch.argmax(res['logits'], dim=1)
-        if args.anchors != "none":
-            predictions = predictions[:,0]
+        
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
@@ -140,14 +138,14 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
     for batch in tqdm.tqdm(data_loader):
         # Move data to gpu
         for k in batch_keys:
-            if isinstance(batch[k],list) and k in extras:
+            if isinstance(batch[k], list) and k in extras:
                 for i, _ in enumerate(batch[k]):
                     batch[k][i] = batch[k][i].to(device)
-            else: 
-                if isinstance(batch[k],list): 
+            else:
+                if isinstance(batch[k], list):
                     continue
                 batch[k] = batch[k].to(device)
-        
+
         # if args.object_encoder == 'pnet':
         #     batch['objects'] = batch['objects'].permute(0, 1, 3, 2)
 
@@ -170,8 +168,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         total_loss_mtr.update(LOSS.item(), batch_size)
 
         predictions = torch.argmax(res['logits'], dim=1)
-        if args.anchors != "none":
-            predictions = predictions[:,0]
+        
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
@@ -305,15 +302,14 @@ def save_predictions_for_visualization(args, model, data_loader, device, channel
 
         batch_size = batch['target_pos'].size(0)
         for i in range(batch_size):
-            logits = res['logits'][:,0] if args.anchors!='none' else res['logits']
             res_list.append({
                 'scan_id': batch['scan_id'][i],
                 'utterance': batch['utterance'][i],
                 'target_pos': batch['target_pos'][i].cpu(),
-                'confidences': logits[i].cpu().numpy(),
+                'confidences': res['logits'][i].cpu().numpy(),
                 'bboxes': batch['objects_bboxes'][i].cpu().numpy(),
                 'predicted_classes': res['class_logits'][i].argmax(dim=-1).cpu(),
-                'predicted_target_pos': logits[i].argmax(-1).cpu(),
+                'predicted_target_pos': res['logits'][i].argmax(-1).cpu(),
                 'object_ids': batch['object_ids'][i],
                 'context_size': batch['context_size'][i],
                 'is_easy': batch['is_easy'][i]

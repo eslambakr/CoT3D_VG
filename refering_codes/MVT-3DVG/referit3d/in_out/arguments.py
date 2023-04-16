@@ -57,14 +57,14 @@ def parse_arguments(notebook_options=None):
     #
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'evaluate', 'vis'])
     parser.add_argument('--predict-lang-anchors', type=str2bool, default=False)
-    parser.add_argument('--anchors', type=str, default='all', choices=['all', 'present', 'none'], 
-                        help='train using all the anchors and a non present class for the prediction, only the mentioned anchors with non extra, or with no anchors')
     parser.add_argument('--max-train-epochs', type=int, default=100, help='number of training epochs. [default: 100]')
     parser.add_argument('--n-workers', type=int, default=-1,
                         help='number of data loading workers [default: -1 is all cores available -1.]')
     parser.add_argument('--random-seed', type=int, default=2020,
                         help='Control pseudo-randomness (net-wise, point-cloud sampling etc.) fostering reproducibility.')
     parser.add_argument('--init-lr', type=float, default=0.0005, help='learning rate for training.')
+    parser.add_argument('--anchors', type=str, default='none', choices=['parallel', 'cot', 'none'],
+                        help='train using all anchors in parallel, or sequential/CoT, or with no anchors')
 
     #
     # Model arguments

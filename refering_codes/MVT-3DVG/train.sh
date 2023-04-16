@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=run_v_train_mvt_lang_test
+#SBATCH --job-name=run_v_train_mvt_lang
 #SBATCH -N 1
-#SBATCH -o /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang_test.out
-#SBATCH -e /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang_test.err
+#SBATCH -o /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang.out
+#SBATCH -e /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang.err
 #SBATCH --mail-type=ALL
-#SBATCH --time=1:00:00
+#SBATCH --time=60:00:00
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:v100:1

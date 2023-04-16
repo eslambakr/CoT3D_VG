@@ -62,6 +62,8 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--random-seed', type=int, default=2020,
                         help='Control pseudo-randomness (net-wise, point-cloud sampling etc.) fostering reproducibility.')
     parser.add_argument('--init-lr', type=float, default=0.0005, help='learning rate for training.')
+    parser.add_argument('--anchors', type=str, default='none', choices=['parallel', 'cot', 'none'],
+                        help='train using all anchors in parallel, or sequential/CoT, or with no anchors')
 
     #
     # Model arguments

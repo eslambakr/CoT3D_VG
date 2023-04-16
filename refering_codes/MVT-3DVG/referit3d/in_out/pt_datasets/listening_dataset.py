@@ -1,6 +1,7 @@
 import numpy as np
 from torch.utils.data import Dataset
 from functools import partial
+from copy import deepcopy
 from .utils import dataset_to_dataloader, max_io_workers
 
 # the following will be shared on other datasets too if not, they should become part of the ListeningDataset
@@ -14,7 +15,7 @@ from transformers import DistilBertTokenizer, DistilBertModel
 class ListeningDataset(Dataset):
     def __init__(self, references, scans, vocab, max_seq_len, points_per_object, max_distractors,
                  class_to_idx=None, object_transformation=None,
-                 visualization=False):
+                 visualization=False, anchors_mode="cot", max_anchors=2):
 
         self.references = references
         self.scans = scans
@@ -25,17 +26,46 @@ class ListeningDataset(Dataset):
         self.class_to_idx = class_to_idx
         self.visualization = visualization
         self.object_transformation = object_transformation
+        self.anchors_mode = anchors_mode
+        # TODO: Eslam make it generic for both Sr3D and Nr3D
+        if self.anchors_mode != 'none':
+            self.max_anchors = max_anchors
+        else:
+            self.max_anchors = 0
         if not check_segmented_object_order(scans):
             raise ValueError
 
     def __len__(self):
         return len(self.references)
 
+    def get_anchor_ids(self, ref):
+        """
+        Convert anchor ids from string to int
+        """
+        anchor_ids = ref['anchor_ids']
+        # Check if anchor_ids is in the format "[3, 26]"
+        if anchor_ids.startswith('[') and anchor_ids.endswith(']'):
+            # Extract the numbers from the string
+            numbers = anchor_ids[1:-1].split(',')
+            # Convert the numbers to integers
+            anchor_ids = [int(num.strip()) for num in numbers]
+        else:
+            # If anchor_ids is not in the expected format, assume it's a single number
+            anchor_ids = [int(anchor_ids)]
+        return anchor_ids
+
     def get_reference_data(self, index):
         ref = self.references.loc[index]
         scan_id = ref['scan_id']
         scan = self.scans[ref['scan_id']]
         target = scan.three_d_objects[ref['target_id']]
+        # Get Anchors
+        anchors = None
+        if self.anchors_mode != 'none':
+            anchors = []
+            for anchor_id in self.get_anchor_ids(ref):
+                anchors.append(scan.three_d_objects[anchor_id])
+
         # sega_update: 使用原始的token
         #tokens = np.array(self.vocab.encode(ref['tokens'], self.max_seq_len), dtype=np.long)
         ori_tokens = ref['tokens']
@@ -47,38 +77,79 @@ class ListeningDataset(Dataset):
         # tokens[:min(self.max_seq_len + 2, len(emb))] = emb[:min(self.max_seq_len + 2, len(emb))]
         is_nr3d = ref['dataset'] == 'nr3d'
 
-        return scan, target, tokens, is_nr3d, scan_id
+        return scan, target, tokens, is_nr3d, scan_id, anchors
 
-    def prepare_distractors(self, scan, target):
+    def prepare_distractors(self, scan, target, anchors):
         target_label = target.instance_label
 
         # First add all objects with the same instance-label as the target
         distractors = [o for o in scan.three_d_objects if
                        (o.instance_label == target_label and (o != target))]
+        already_included = [target_label]
+
+        # Add anchors' distractors:
+        if self.anchors_mode != 'none':
+            anchor_labels = [anchor.instance_label for anchor in anchors]
+            anchors_distractors = []
+            for anchor in anchors:
+                anchor_distractors = [o for o in scan.three_d_objects if
+                                      (o.instance_label == anchor.instance_label and (o != anchor))]
+                if len(anchor_distractors):
+                    already_included.append(anchor.instance_label)
+                anchors_distractors = anchors_distractors + anchor_distractors
+            distractors = distractors + anchors_distractors
 
         # Then all more objects up to max-number of distractors
-        already_included = {target_label}
         clutter = [o for o in scan.three_d_objects if o.instance_label not in already_included]
         np.random.shuffle(clutter)
 
         distractors.extend(clutter)
-        distractors = distractors[:self.max_distractors]
+        distractors = distractors[:(self.max_distractors - self.max_anchors)]
         np.random.shuffle(distractors)
 
         return distractors
 
     def __getitem__(self, index):
         res = dict()
-        scan, target, tokens, is_nr3d, scan_id = self.get_reference_data(index)
+        scan, target, tokens, is_nr3d, scan_id, anchors = self.get_reference_data(index)
         # Make a context of distractors
-        context = self.prepare_distractors(scan, target)
+        context = self.prepare_distractors(scan, target, anchors)
 
-        # Add target object in 'context' list
-        target_pos = np.random.randint(len(context) + 1)
-        context.insert(target_pos, target)
+        if self.anchors_mode == 'none':
+            # Add target object in 'context' list
+            target_pos = np.random.randint(len(context) + 1)
+            anchors_pos = None
+            context.insert(target_pos, target)
+        else:
+            # replace is false to make sure the positions are unique
+            poses = np.random.choice(range(len(context) + 1), 1+self.max_anchors, replace=False)
+            poses.sort()
+            # Add target object in 'context' list
+            target_pos = poses[0]
+            context.insert(target_pos, target)
+            # Add anchors in 'context' list
+            anchors_pos = poses[1:]
+            for anchor_i, anchor in enumerate(anchors):
+                context.insert(anchors_pos[anchor_i], deepcopy(anchor))
+            # pad with dummy anchor which will be replaced by zeros later.
+            for anchor_i in range(len(anchors), self.max_anchors):
+                context.insert(anchors_pos[anchor_i], deepcopy(anchors[0]))
+                """
+                context[anchors_pos[anchor_i]].color = None
+                context[anchors_pos[anchor_i]].pc = None
+                context[anchors_pos[anchor_i]].points = None
+                context[anchors_pos[anchor_i]].scan = None
+                context[anchors_pos[anchor_i]].object_id = None
+                """
+                context[anchors_pos[anchor_i]].instance_label = 'pad'
 
         # sample point/color for them
         samples = np.array([sample_scan_object(o, self.points_per_object) for o in context])
+
+        if self.anchors_mode != 'none':
+            # pad with non-existing anchor
+            for anchor_i in range(len(anchors), self.max_anchors):
+                samples[anchors_pos[anchor_i]] = np.zeros((1, samples.shape[1], samples.shape[2]), dtype=samples.dtype)
 
         # mark their classes
         # res['ori_labels'], 
@@ -91,6 +162,12 @@ class ListeningDataset(Dataset):
         box_info[:len(context),3] = [o.get_bbox().volume() for o in context]
         box_corners = np.zeros((self.max_context_size, 8, 3))
         box_corners[:len(context)] = [o.get_bbox().corners for o in context]
+        if self.anchors_mode != 'none':
+            # pad with non-existing anchor
+            for anchor_i in range(len(anchors), self.max_anchors):
+                box_info[anchors_pos[anchor_i]] = np.zeros((1, 4))
+                box_corners[anchors_pos[anchor_i]] = np.zeros((1, 8, 3))
+
         if self.object_transformation is not None:
             samples = self.object_transformation(samples)
 
@@ -108,6 +185,15 @@ class ListeningDataset(Dataset):
         res['target_class'] = self.class_to_idx[target.instance_label]
         res['target_pos'] = target_pos
         res['target_class_mask'] = target_class_mask
+        # Anchors
+        if self.anchors_mode != 'none':
+            res['anchor_classes'] = [self.class_to_idx[anchor.instance_label] for anchor in anchors]
+            # pad with non-existing anchor
+            for anchor_i in range(len(anchors), self.max_anchors):
+                res['anchor_classes'].append(self.class_to_idx['pad'])
+            res['anchors_pos'] = np.array(anchors_pos)
+            res['anchor_classes'] = np.array(res['anchor_classes'])
+
         res['tokens'] = tokens
         res['is_nr3d'] = is_nr3d
         res['box_info'] = box_info
@@ -176,7 +262,8 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb):
                                    max_distractors=max_distractors,
                                    class_to_idx=class_to_idx,
                                    object_transformation=object_transformation,
-                                   visualization=args.mode == 'evaluate')
+                                   visualization=args.mode == 'evaluate',
+                                   anchors_mode=args.anchors)
 
         seed = None
         if split == 'test':

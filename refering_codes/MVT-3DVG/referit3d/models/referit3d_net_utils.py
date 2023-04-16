@@ -49,16 +49,20 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
     # Set the model in training mode
     model.train()
     np.random.seed()  # call this to change the sampling of the point-clouds
-    batch_keys = make_batch_keys(args)
+    extras = None
+    if args.anchors != 'none':
+        extras = ['anchors_pos']
+    batch_keys = make_batch_keys(args, extras)
     for batch in tqdm.tqdm(data_loader):
         # Move data to gpu
         for k in batch_keys:
-            if isinstance(batch[k],list):
-                continue
-            batch[k] = batch[k].to(device)
-
-        # if args.object_encoder == 'pnet':
-        #     batch['objects'] = batch['objects'].permute(0, 1, 3, 2)
+            if isinstance(batch[k], list) and k in extras:
+                for i, _ in enumerate(batch[k]):
+                    batch[k][i] = batch[k][i].to(device)
+            else:
+                if isinstance(batch[k], list):
+                    continue
+                batch[k] = batch[k].to(device)
 
         lang_tokens = tokenizer(batch['tokens'], return_tensors='pt', padding=True)
         for name in lang_tokens.data:
@@ -122,14 +126,21 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
     else:
         np.random.seed(args.random_seed)
 
-    batch_keys = make_batch_keys(args)
+    extras = None
+    if args.anchors != 'none':
+        extras = ['anchors_pos']
+    batch_keys = make_batch_keys(args, extras)
 
     for batch in tqdm.tqdm(data_loader):
         # Move data to gpu
         for k in batch_keys:
-            if isinstance(batch[k],list):
-                continue
-            batch[k] = batch[k].to(device)
+            if isinstance(batch[k], list) and k in extras:
+                for i, _ in enumerate(batch[k]):
+                    batch[k][i] = batch[k][i].to(device)
+            else:
+                if isinstance(batch[k], list):
+                    continue
+                batch[k] = batch[k].to(device)
 
         # if args.object_encoder == 'pnet':
         #     batch['objects'] = batch['objects'].permute(0, 1, 3, 2)

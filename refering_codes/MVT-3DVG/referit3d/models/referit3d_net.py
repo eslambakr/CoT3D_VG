@@ -218,4 +218,6 @@ class ReferIt3DNet_transformer(nn.Module):
         LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS)  # []
         if self.anchors_mode != 'none':
             LOGITS = LOGITS[:,:,0]
+        if self.predict_lang_anchors:
+            LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, 3)[:,:,0]
         return LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS

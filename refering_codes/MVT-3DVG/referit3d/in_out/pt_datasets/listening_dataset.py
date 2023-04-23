@@ -39,11 +39,8 @@ class ListeningDataset(Dataset):
 
     def __len__(self):
         return len(self.references)
-
+    
     def get_anchor_ids(self, ref):
-        """
-        Convert anchor ids from string to int
-        """
         anchor_ids = ref['anchor_ids']
         # Check if anchor_ids is in the format "[3, 26]"
         if anchor_ids.startswith('[') and anchor_ids.endswith(']'):
@@ -56,19 +53,15 @@ class ListeningDataset(Dataset):
             anchor_ids = [int(anchor_ids)]
         return anchor_ids
     
-
     def get_reference_data(self, index):
         ref = self.references.loc[index]
         scan_id = ref['scan_id']
         scan = self.scans[ref['scan_id']]
         target = scan.three_d_objects[ref['target_id']]
-        # Get Anchors
-        anchors = None
-        if self.anchors_mode != 'none'  or self.lang_mode:
+        if self.anchors_mode != 'none' or self.lang_mode:
             anchors = []
             for anchor_id in self.get_anchor_ids(ref):
                 anchors.append(scan.three_d_objects[anchor_id])
-
         # sega_update: 使用原始的token
         #tokens = np.array(self.vocab.encode(ref['tokens'], self.max_seq_len), dtype=np.long)
         ori_tokens = ref['tokens']
@@ -79,35 +72,36 @@ class ListeningDataset(Dataset):
         # tokens = np.array([102]*(self.max_seq_len + 2 + self.max_context_size * 2))
         # tokens[:min(self.max_seq_len + 2, len(emb))] = emb[:min(self.max_seq_len + 2, len(emb))]
         is_nr3d = ref['dataset'] == 'nr3d'
+        if self.anchors_mode != 'none' or self.lang_mode:
+            return scan, target, tokens, is_nr3d, scan_id, anchors
+        else:
+            return scan, target, tokens, is_nr3d, scan_id, None
 
-        return scan, target, tokens, is_nr3d, scan_id, anchors
-
-    def prepare_distractors(self, scan, target, anchors):
+    def prepare_distractors(self, scan, target, anchors=None):
         target_label = target.instance_label
 
         # First add all objects with the same instance-label as the target
         distractors = [o for o in scan.three_d_objects if
                        (o.instance_label == target_label and (o != target))]
-        already_included = [target_label]
-
-        # Add anchors' distractors:
         if self.anchors_mode != 'none':
             anchor_labels = [anchor.instance_label for anchor in anchors]
             anchors_distractors = []
             for anchor in anchors:
-                anchor_distractors = [o for o in scan.three_d_objects if
-                                      (o.instance_label == anchor.instance_label and (o != anchor))]
-                if len(anchor_distractors):
-                    already_included.append(anchor.instance_label)
+                anchor_distractors = [ o for o in scan.three_d_objects if
+                            (o.instance_label == anchor.instance_label and (o != anchor)) ]
                 anchors_distractors = anchors_distractors + anchor_distractors
+                
             distractors = distractors + anchors_distractors
-
         # Then all more objects up to max-number of distractors
+        already_included = {target_label}
+        if self.anchors_mode != 'none':
+            already_included.update(anchor_labels)
+
         clutter = [o for o in scan.three_d_objects if o.instance_label not in already_included]
         np.random.shuffle(clutter)
 
         distractors.extend(clutter)
-        distractors = distractors[:(self.max_distractors - self.max_anchors)]
+        distractors = distractors[:self.max_distractors]
         np.random.shuffle(distractors)
 
         return distractors
@@ -222,6 +216,7 @@ class ListeningDataset(Dataset):
             res['target_object_id'] = target.object_id
 
         return res
+
 
 
 def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb):

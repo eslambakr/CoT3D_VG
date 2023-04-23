@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=run_v_train_mvt_lang_testing
+#SBATCH --job-name=run_v_train_mvt_lang_testing5
 #SBATCH -N 1
-#SBATCH -o /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang_testing.out
-#SBATCH -e /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang_testing.err
+#SBATCH -o /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang_testing5.out
+#SBATCH -e /ibex/scratch/ahmems0a/mvt/run_v_train_mvt_lang_testing5.err
 #SBATCH --mail-type=ALL
 #SBATCH --time=100:00:00
 #SBATCH --mem=64G
@@ -19,10 +19,10 @@ python train_referit3d.py \
     -scannet-file /home/ahmems0a/repos/MVT-3DVG/data/keep_all_points_with_global_scan_alignment/keep_all_points_with_global_scan_alignment.pkl \
     -referit3D-file /home/ahmems0a/repos/MVT-3DVG/data/sr3d.csv \
     --log-dir logs/MVT_nr3d \
-    --n-workers 8 \
+    --n-workers 6 \
     --model 'referIt3DNet_transformer' \
     --unit-sphere-norm True \
-    --batch-size 64 \
+    --batch-size 24 \
     --encoder-layer-num 3 \
     --decoder-layer-num 4 \
     --decoder-nhead-num 8 \

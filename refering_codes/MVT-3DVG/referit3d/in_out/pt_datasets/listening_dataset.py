@@ -10,6 +10,7 @@ from .utils import check_segmented_object_order, sample_scan_object, pad_samples
 from .utils import instance_labels_of_context, mean_rgb_unit_norm_transform
 from ...data_generation.nr3d import decode_stimulus_string
 from transformers import DistilBertTokenizer, DistilBertModel
+from ..three_d_object import ThreeDObject
 
 
 class ListeningDataset(Dataset):
@@ -130,10 +131,12 @@ class ListeningDataset(Dataset):
             # Add anchors in 'context' list
             anchors_pos = poses[1:]
             for anchor_i, anchor in enumerate(anchors):
-                context.insert(anchors_pos[anchor_i], deepcopy(anchor))
+                # context.insert(anchors_pos[anchor_i], deepcopy(anchor))
+                context.insert(anchors_pos[anchor_i], anchor)
             # pad with dummy anchor which will be replaced by zeros later.
             for anchor_i in range(len(anchors), self.max_anchors):
-                context.insert(anchors_pos[anchor_i], deepcopy(anchors[0]))
+                # context.insert(anchors_pos[anchor_i], deepcopy(anchors[0]))
+                context.insert(anchors_pos[anchor_i], ThreeDObject(anchor.scan, anchor.object_id, anchor.points, anchor.instance_label))
                 """
                 context[anchors_pos[anchor_i]].color = None
                 context[anchors_pos[anchor_i]].pc = None
@@ -152,7 +155,7 @@ class ListeningDataset(Dataset):
                 samples[anchors_pos[anchor_i]] = np.zeros((1, samples.shape[1], samples.shape[2]), dtype=samples.dtype)
 
         # mark their classes
-        # res['ori_labels'], 
+        # res['ori_labels'],
         res['class_labels'] = instance_labels_of_context(context, self.max_context_size, self.class_to_idx)
         res['scan_id'] = scan_id
         box_info = np.zeros((self.max_context_size, 4))
@@ -180,19 +183,18 @@ class ListeningDataset(Dataset):
         target_class_mask = np.zeros(self.max_context_size, dtype=np.bool)
         target_class_mask[:len(context)] = [target.instance_label == o.instance_label for o in context]
 
-
-
         res['target_class'] = self.class_to_idx[target.instance_label]
         res['target_pos'] = target_pos
         res['target_class_mask'] = target_class_mask
         # Anchors
         if self.anchors_mode != 'none':
-            res['anchor_classes'] = [self.class_to_idx[anchor.instance_label] for anchor in anchors]
+            res['anchor_classes'] = np.zeros(self.max_anchors)
+            for anchor_i, anchor in enumerate(anchors):
+                res['anchor_classes'][anchor_i] = self.class_to_idx[anchor.instance_label]
             # pad with non-existing anchor
             for anchor_i in range(len(anchors), self.max_anchors):
-                res['anchor_classes'].append(self.class_to_idx['pad'])
-            res['anchors_pos'] = np.array(anchors_pos)
-            res['anchor_classes'] = np.array(res['anchor_classes'])
+                res['anchor_classes'][anchor_i] = self.class_to_idx['pad']
+            res['anchors_pos'] = anchors_pos
 
         res['tokens'] = tokens
         res['is_nr3d'] = is_nr3d

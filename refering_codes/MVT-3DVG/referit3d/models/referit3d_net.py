@@ -76,6 +76,7 @@ class ReferIt3DNet_transformer(nn.Module):
         self.lang_cls_alpha = args.lang_cls_alpha
         self.obj_cls_alpha = args.obj_cls_alpha
         self.anchors_mode = args.anchors
+        self.cot_type = args.cot_type
 
         # TODO:Eslam: make this one generic for Nr3D
         if self.anchors_mode == "cot":
@@ -112,78 +113,24 @@ class ReferIt3DNet_transformer(nn.Module):
                                           nn.Linear(self.inner_dim, n_obj_classes))
 
         if self.anchors_mode == 'cot':
-            """
-            self.query_pos = nn.Parameter(torch.rand(self.ref_out, self.inner_dim))
-            self.object_language_clf = CoTTransformer(embedding_size=self.inner_dim, num_cls=args.max_distractors + 1,
-                                                      num_heads=1, num_encoder_layers=1, num_decoder_layers=1,
-                                                      forward_expansion=1, dropout=self.dropout_rate,
-                                                      trg_len=self.ref_out, )
-            """
-            """
-            # Option #1 and #2
-            self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512, activation="gelu"),
-                                                             num_layers=1)
-            # Option #2
-            self.object_language_clf2 = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                                     nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                                     nn.Linear(self.inner_dim, self.ref_out))
-            self.fc = nn.Linear(self.inner_dim, args.max_distractors + 1)
-            self.trg_position_embedding = nn.Embedding(self.ref_out, self.inner_dim)
-            self.transformer = nn.Transformer(self.inner_dim, 1, 1, 1, 1, self.dropout_rate)
-            """
-            """
-            # Option #3
-            self.object_language_clf = DecoderWithAttention(attention_dim=self.inner_dim, embed_dim=512, decoder_dim=512,
-                                                            vocab_size=52, encoder_dim=self.inner_dim, dropout=0.5)
-            """
-            """
-            # Option #4:
-            self.object_language_clf_anchors = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                                             nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                                             nn.Linear(self.inner_dim, self.max_num_anchors))
-            self.anchors_mapping = nn.Sequential(nn.Linear(self.max_num_anchors, self.inner_dim),
-                                                 nn.ReLU(), nn.Dropout(self.dropout_rate))
-            self.object_language_clf = nn.Sequential(nn.Linear(self.inner_dim*2, self.inner_dim),
-                                                     nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                                     nn.Linear(self.inner_dim, 1))
-            """
-            """
-            # Option #5:
-            self.object_language_clf_anchors = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                                             nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                                             nn.Linear(self.inner_dim, self.max_num_anchors))
-            self.anchors_mapping = nn.Sequential(nn.Linear(args.max_distractors + 1, self.inner_dim),
-                                                 nn.ReLU(), nn.Dropout(self.dropout_rate))
-            self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512, activation="gelu"),
-                                                             num_layers=1)
-            self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, args.max_distractors + 1),
-                                        nn.ReLU(), nn.Dropout(self.dropout_rate))
-            """
-            """
-            # Option #6:
-            self.anchors_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                                   nn.ReLU(), nn.Dropout(self.dropout_rate))
-            self.object_language_clf_anchors = nn.Linear(self.inner_dim, self.max_num_anchors)
-            #self.trans_tgt = nn.Parameter(torch.rand(1, self.inner_dim))  # [tgt_length, E]
-            self.trans_tgt = nn.Linear(args.max_distractors + 1, 1)
-            self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512, activation="gelu"),
-                                                             num_layers=1)
-            self.fc_out = nn.Linear(self.inner_dim, args.max_distractors + 1)
-            self.dummy_fc = nn.Linear(1, self.inner_dim)
-            self.head_final = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                                             nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                                             nn.Linear(self.inner_dim, self.max_num_anchors))
-            """
-            # Option #8:
-            self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                                   nn.ReLU(), nn.Dropout(self.dropout_rate))
-            self.object_language_clf_parallel = nn.Linear(self.inner_dim, self.max_num_anchors+1)
-            self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512,
-                                                                                               activation="gelu"), num_layers=1)
-            #self.fc_out = nn.Linear(self.inner_dim, args.max_distractors + 1)
-            self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                                     nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                                     nn.Linear(self.inner_dim, self.max_num_anchors+1))
+            if self.cot_type == "cross":
+                self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
+                                                    nn.ReLU(), nn.Dropout(self.dropout_rate))
+                self.object_language_clf_parallel = nn.Linear(self.inner_dim, self.max_num_anchors+1)
+                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512,
+                                                                                                activation="gelu"), num_layers=4)
+                self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
+                                                        nn.ReLU(), nn.Dropout(self.dropout_rate),
+                                                        nn.Linear(self.inner_dim, self.max_num_anchors+1))
+            elif self.cot_type == "causal":
+                self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
+                                                    nn.ReLU(), nn.Dropout(self.dropout_rate))
+                self.object_language_clf_parallel = nn.Linear(self.inner_dim, 1)
+                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512,
+                                                                                                activation="gelu"), num_layers=4)
+                self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
+                                                        nn.ReLU(), nn.Dropout(self.dropout_rate),
+                                                        nn.Linear(self.inner_dim, 1))
         else:
             self.object_language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                      nn.ReLU(), nn.Dropout(self.dropout_rate),
@@ -260,13 +207,9 @@ class ReferIt3DNet_transformer(nn.Module):
             trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)  # [N, 2]
             trg_pass = trg_pass.reshape(-1)  # [N*trg_seq_length]
             LOGITS_reshaped = LOGITS.reshape(-1, LOGITS.shape[2])  # [N*trg_seq_length, num_cls]
-            #trg_pass = batch['target_pos']
-            #LOGITS_reshaped = LOGITS[:, 0]
             referential_loss = self.logit_loss(LOGITS_reshaped, trg_pass)
-            print("Aux Loss = ", referential_loss)
             if AUX_LOGITS != None:
                 referential_loss += self.logit_loss_aux(AUX_LOGITS.reshape(-1, AUX_LOGITS.shape[2]), trg_pass)
-                print("Aux Loss = ", referential_loss)
         else:
             referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
@@ -329,131 +272,25 @@ class ReferIt3DNet_transformer(nn.Module):
         # print("agg_feats: ", agg_feats.shape)  # [128, 52, 768]
 
         if self.anchors_mode == "cot":
-            #  [128, 4, 52, 768] --> [128, 52, 768]
-            """
-            if self.aggregate_type == 'avg':
-                obj_agg_feats = (obj_infos / self.view_number).sum(dim=1)
-            elif self.aggregate_type == 'avgmax':
-                obj_agg_feats = (obj_infos / self.view_number).sum(dim=1) + obj_infos.max(dim=1).values
-            else:
-                obj_agg_feats = obj_infos.max(dim=1).values
-            obj_agg_feats = obj_feats
-            # create the pass --> anchor + target  [N, 2]
-            # trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)
-            # trg_pass = batch['target_pos']  # [N,]
-            # [N, num_cls, embed] --> [N, self.ref_out, embed]
-            #embed_trg = torch.gather(obj_agg_feats, 1, trg_pass.unsqueeze(-1).repeat(1, 1, obj_agg_feats.shape[-1]))
-            #embed_trg = torch.gather(obj_agg_feats, 1, trg_pass.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, obj_agg_feats.shape[-1]))
-            # Add start token as zeros:
-            #embed_trg = torch.cat((torch.zeros((embed_trg.shape[0], 1, embed_trg.shape[2]),
-            #                                   dtype=embed_trg.dtype, device=self.device), embed_trg), 1)
-
-            embed_trg = torch.tensor((52), device=self.device).repeat(B).unsqueeze(-1)  # [N, 1]
-            embed_trg = torch.cat((embed_trg, batch['anchors_pos'][:, 0].unsqueeze(-1),
-                                   batch['target_pos'].unsqueeze(-1)), -1)  # [N, 3]
-            print("embed_trg = ", embed_trg[:,1])
-            embed_trg = self.query_embed(embed_trg)  # [N, 3, 768]
-            """
-            """
-            cot_out = self.object_language_clf(embed_src=agg_feats.permute(1, 0, 2),
-                                               query_embed=self.query_pos,
-                                               device=self.device)  # [N, trg_seq_length, num_cls]
-            trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)
-            LOGITS = cot_out.reshape(-1, cot_out.shape[2])  # [N*trg_seq_length, num_cls]
-            AUX_LOGITS = trg_pass.reshape(-1)  # [N*trg_seq_length]
-            #print("cot_out = ", cot_out.shape)
-            #LOGITS = cot_out[:, -1]  # [N, num_cls]
-            #AUX_LOGITS = batch['target_pos']
-            """
-            """
-            LOGITS = self.object_language_clf(embed_src=agg_feats.permute(1, 0, 2),
-                                               query_embed=self.query_pos,
-                                               device=self.device)  # [N, trg_seq_length, num_cls]
-            """
-            """ 
-            # Option #1
-            embed_trg = self.query_pos.unsqueeze(1).repeat(1, B, 1)  # [trg_seq_length, N, embed]
-            cot_out = self.object_language_clf(embed_trg, agg_feats.permute(1, 0, 2))  # [trg_seq_length, N, num_cls]
-            LOGITS = cot_out.permute(1, 0, 2)  # [trg_seq_length, N, num_cls] --> [N, trg_seq_length, num_cls]
-            """
-            """
-            # Option #2
-            cot_out = self.object_language_clf2(agg_feats)  # [N, 52, E] --> [N, 52, trg_seq_length]
-            AUX_LOGITS = cot_out.permute(0, 2, 1)  # [N, 52, trg_seq_length] --> [N, trg_seq_length, 52]
-
-            pred_indx = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)
-            #pred_indx = torch.argmax(AUX_LOGITS, dim=-1)  # [N, trg_seq_length]
-            embed_trg = torch.gather(agg_feats, 1, pred_indx.unsqueeze(-1).repeat(1, 1, agg_feats.shape[-1]))# [N, num_cls, E] --> [N, self.ref_out, E]
-
-            embed_trg = torch.cat((torch.zeros((embed_trg.shape[0], 1, embed_trg.shape[2]),
-                                               dtype=embed_trg.dtype, device=self.device), embed_trg), 1) # Shift output to right [N, self.ref_out+1, E]
-            trg_mask = self.transformer.generate_square_subsequent_mask(2).to(self.device)
-            trg_positions = (torch.arange(0, 2).unsqueeze(1).expand(2, B).to(self.device))
-            embed_trg = embed_trg.permute(1, 0, 2)[1:]
-            #embed_trg += self.trg_position_embedding(trg_positions)
-            cot_out = self.object_language_clf(embed_trg, agg_feats.permute(1, 0, 2), tgt_mask=None)  # [trg_seq_length, N, E]
-            cot_out = cot_out.permute(1, 0, 2)  # [trg_seq_length, N, E] --> [N, trg_seq_length, E]
-            LOGITS = self.fc(cot_out)  # [N, trg_seq_length, E] --> [N, trg_seq_length, num_cls]
-            """
-            """
-            # Option #3:
-            trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)  # [N, trg_seq_length]
-            caption_lengths = torch.ones((B,1), device=self.device)*(self.ref_out+1)  # [N, 1] the +1 to add <end>
-            LOGITS = self.object_language_clf(encoder_out=agg_feats, encoded_captions=trg_pass, caption_lengths=caption_lengths, device=self.device)[0]  # [N, trg_seq_length, num_cls]
-            """
-            """
-            # Option #4:
-            LOGITS_anchors = self.object_language_clf_anchors(agg_feats)  # [N, num_cls, E] --> [N, num_cls, anchors_length]
-            #mem = torch.cat((agg_feats, LOGITS_anchors.repeat(1, 1, agg_feats.shape[-1])), -1)  # [N, num_cls, E] --> [N, num_cls, E*2]
-            mem = torch.cat((agg_feats, self.anchors_mapping(LOGITS_anchors)), -1)  # [N, num_cls, E] --> [N, num_cls, E*2]
-            LOGITS_target = self.object_language_clf(mem)  # [N, num_cls, E*2] --> [N, num_cls, trg_length]
-            LOGITS = torch.cat((LOGITS_anchors, LOGITS_target), -1)  # [N, num_cls, trg_seq_length] :trg_seq_length=anchors_length+trg_length
-            LOGITS = LOGITS.permute(0, 2, 1)  # [N, num_cls, trg_seq_length] --> [N, trg_seq_length, num_cls]
-            """
-            """
-            # Option #5:
-            LOGITS_anchors = self.object_language_clf_anchors(agg_feats)  # [N, num_cls, E] --> [N, num_cls, anchors_length]
-            mem = self.anchors_mapping(LOGITS_anchors.permute(2, 0, 1))  # [N, num_cls, anchors_length] --> [anchors_length, N, num_cls] --> [anchors_length, N, E]
-            out = self.object_language_clf(mem, agg_feats.permute(1, 0, 2))  # [trg_seq_length, N, E]
-            LOGITS_target = self.fc_out(out.permute(1, 0, 2))  # [trg_seq_length, N, E] --> [N, trg_seq_length, E] --> [N, trg_seq_length, num_cls]
-            LOGITS = torch.cat((LOGITS_anchors.permute(0, 2, 1), LOGITS_target), 1)  # [N, trg_seq_length, 52]
-            """
-            """
-            # Option #6:
-            obj_embd = self.anchors_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]
-            LOGITS_anchors = self.object_language_clf_anchors(obj_embd)  # [N, num_cls, E] --> [N, num_cls, anchors_length]
-            # Pick the selected anchors:  [N, num_cls, E] --> [N, anchors_length, E]
-            anchors_embd = vector_gather(obj_embd,  batch['anchors_pos'][:, 0].unsqueeze(-1))
-            # anchors_embd = self.dummy_fc(batch['target_pos'].unsqueeze(-1).unsqueeze(-1).float())
-            # anchors_embd = self.dummy_fc(batch['anchors_pos'][:,0].unsqueeze(-1).unsqueeze(-1).float())
-            # Run Trans Decoder:
-            # [anchors_length, N, E], [num_cls, N, E] --> [anchors_length, N, E]
-            #trans_tgt_in = torch.cat((anchors_embd, self.trans_tgt.unsqueeze(0).repeat(B, 1, 1)), 1)
-            trans_tgt_in = torch.cat((anchors_embd, self.trans_tgt(agg_feats.permute(0, 2, 1)).permute(0, 2, 1)), 1)
-            cot_out = self.object_language_clf(trans_tgt_in.permute(1, 0, 2), agg_feats.permute(1, 0, 2))[1:]
-            #cot_out = self.object_language_clf(anchors_embd.permute(1, 0, 2), torch.zeros_like(agg_feats, dtype=agg_feats.dtype, device=agg_feats.device))
-            cot_out = cot_out.permute(1, 0, 2)  # [anchors_length, N, E] --> [N, anchors_length, E]
-            LOGITS_target = self.fc_out(cot_out)  # [N, anchors_length, E] --> [N, anchors_length, num_cls]
-            LOGITS = torch.cat((LOGITS_anchors.permute(0, 2, 1), LOGITS_target), 1)  # [N, tgt_length, num_cls]
-            """
-            """
-            # Option #7:
-            obj_embd = self.anchors_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]
-            LOGITS_anchors = self.object_language_clf_anchors(obj_embd)  # [N, num_cls, E] --> [N, num_cls, anchors_length]
-            anchors_embd = vector_gather(obj_embd,  batch['anchors_pos'][:, 0].unsqueeze(-1))
-            cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), anchors_embd.permute(1, 0, 2)).permute(1, 0, 2)  # [N, num_cls, E]
-            LOGITS_target = self.head_final(cot_out)
-            LOGITS = torch.cat((LOGITS_anchors, LOGITS_target), -1).permute(0, 2, 1)  # [N, tgt_length, num_cls]
-            """
-            # Option #8:
-            parallel_embd = self.parallel_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]
-            AUX_LOGITS = self.object_language_clf_parallel(parallel_embd)  # [N, num_cls, E] --> [N, num_cls, anchors_length+1]
-            AUX_LOGITS = AUX_LOGITS.permute(0, 2, 1)  # [N, num_cls, anchors_length+1] --> [N, anchors_length+1, num_cls]
-            #trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)  # [N, anchors_length+1]
-            trg_pass = torch.argmax(AUX_LOGITS, dim=-1)  # [N, trg_seq_length]
-            sampled_embd = vector_gather(parallel_embd, trg_pass)  # [N, num_cls, E] --> [N, anchors_length+1, E]
-            cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), sampled_embd.permute(1, 0, 2)).permute(1, 0, 2)  # [N, anchors_length+1, E]
-            LOGITS = self.fc_out(cot_out).permute(0, 2, 1)  # [N, anchors_length+1, E] --> [N, anchors_length+1, num_cls]
+            if self.cot_type == "cross":
+                parallel_embd = self.parallel_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]
+                AUX_LOGITS = self.object_language_clf_parallel(parallel_embd)  # [N, num_cls, E] --> [N, num_cls, anchors_length+1]
+                AUX_LOGITS = AUX_LOGITS.permute(0, 2, 1)  # [N, num_cls, anchors_length+1] --> [N, anchors_length+1, num_cls]
+                #trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)  # [N, anchors_length+1]
+                trg_pass = torch.argmax(AUX_LOGITS, dim=-1)  # [N, trg_seq_length]
+                sampled_embd = vector_gather(parallel_embd, trg_pass)  # [N, num_cls, E] --> [N, anchors_length+1, E]
+                cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), sampled_embd.permute(1, 0, 2)).permute(1, 0, 2)  # [N, anchors_length+1, E]
+                LOGITS = self.fc_out(cot_out).permute(0, 2, 1)  # [N, anchors_length+1, E] --> [N, anchors_length+1, num_cls]
+            elif self.cot_type == "causal":
+                parallel_embd = self.parallel_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]
+                anchor_LOGITS = self.object_language_clf_parallel(parallel_embd)  # [N, num_cls, E] --> [N, num_cls, 1]
+                anchor_LOGITS = anchor_LOGITS.permute(0, 2, 1)  # [N, num_cls, 1] --> [N, 1, num_cls]
+                trg_pass = torch.argmax(anchor_LOGITS, dim=-1)  # [N, 1]
+                sampled_embd = vector_gather(parallel_embd, trg_pass)  # [N, num_cls, E] --> [N, 1, E]
+                cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), sampled_embd.permute(1, 0, 2)).permute(1, 0, 2)  # [N, 52, E]
+                target_LOGITS = self.fc_out(cot_out).permute(0, 2, 1)  # [N, 52, E] --> [N, 52, 1] --> [N, 1, 52]
+                LOGITS = torch.cat((anchor_LOGITS, target_LOGITS), dim=1)  # [N, 2, 52]
+                AUX_LOGITS = None
         elif self.anchors_mode == "parallel":
             cot_out = self.object_language_clf(agg_feats)  # [N, 52, E] --> [N, 52, trg_seq_length]
             LOGITS = cot_out.permute(0, 2, 1)  # [N, 52, trg_seq_length] --> [N, trg_seq_length, 52]

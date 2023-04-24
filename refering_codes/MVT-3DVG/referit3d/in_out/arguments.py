@@ -64,6 +64,10 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--init-lr', type=float, default=0.0005, help='learning rate for training.')
     parser.add_argument('--anchors', type=str, default='none', choices=['parallel', 'cot', 'none'],
                         help='train using all anchors in parallel, or sequential/CoT, or with no anchors')
+    parser.add_argument('--cot_type', type=str, default='cross', choices=['cross', 'causal'],
+                        help='cross:  transformer decoder will refine all inputs based even on the future predections\
+                              causal: transformer decoder will refine inputs based on causal manner(only previous predictions)')
+    parser.add_argument('--predict_lang_anchors', type=str2bool, default=False)
 
     #
     # Model arguments

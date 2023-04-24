@@ -24,33 +24,33 @@ from transformers import BertTokenizer, BertModel
 
 
 def log_train_test_information():
-        """Helper logging function.
-        Note uses "global" variables defined below.
-        """
-        logger.info('Epoch:{}'.format(epoch))
-        for phase in ['train', 'test']:
-            if phase == 'train':
-                meters = train_meters
-            else:
-                meters = test_meters
+    """Helper logging function.
+    Note uses "global" variables defined below.
+    """
+    logger.info('Epoch:{}'.format(epoch))
+    for phase in ['train', 'test']:
+        if phase == 'train':
+            meters = train_meters
+        else:
+            meters = test_meters
 
-            info = '{}: Total-Loss {:.4f}, Listening-Acc {:.4f}'.format(phase,
-                                                                        meters[phase + '_total_loss'],
-                                                                        meters[phase + '_referential_acc'])
+        info = '{}: Total-Loss {:.4f}, Listening-Acc {:.4f}'.format(phase,
+                                                                    meters[phase + '_total_loss'],
+                                                                    meters[phase + '_referential_acc'])
 
-            if args.obj_cls_alpha > 0:
-                info += ', Object-Clf-Acc: {:.4f}'.format(meters[phase + '_object_cls_acc'])
+        if args.obj_cls_alpha > 0:
+            info += ', Object-Clf-Acc: {:.4f}'.format(meters[phase + '_object_cls_acc'])
 
-            if args.lang_cls_alpha > 0:
-                info += ', Text-Clf-Acc: {:.4f}'.format(meters[phase + '_txt_cls_acc'])
+        if args.lang_cls_alpha > 0:
+            info += ', Text-Clf-Acc: {:.4f}'.format(meters[phase + '_txt_cls_acc'])
 
-            logger.info(info)
-            logger.info('{}: Epoch-time {:.3f}'.format(phase, timings[phase]))
-        logger.info('Best so far {:.3f} (@epoch {})'.format(best_test_acc, best_test_epoch))
+        logger.info(info)
+        logger.info('{}: Epoch-time {:.3f}'.format(phase, timings[phase]))
+    logger.info('Best so far {:.3f} (@epoch {})'.format(best_test_acc, best_test_epoch))
 
 
 if __name__ == '__main__':
-    
+
     # Parse arguments
     args = parse_arguments()
     # Read the scan related information
@@ -91,38 +91,50 @@ if __name__ == '__main__':
 
     if gpu_num > 1:
         model = nn.DataParallel(model)
-    
+
     model = model.to(device)
     print(model)
-    
+
     # <1>
     if gpu_num > 1:
-        param_list=[
-            {'params':model.module.language_encoder.parameters(),'lr':args.init_lr*0.1},
-            {'params':model.module.refer_encoder.parameters(), 'lr':args.init_lr*0.1},
-            {'params':model.module.object_encoder.parameters(), 'lr':args.init_lr},
-            {'params':model.module.obj_feature_mapping.parameters(), 'lr': args.init_lr},
-            {'params':model.module.box_feature_mapping.parameters(), 'lr': args.init_lr},
-            {'params':model.module.language_clf.parameters(), 'lr': args.init_lr},
-            {'params':model.module.object_language_clf.parameters(), 'lr': args.init_lr},
+        param_list = [
+            {'params': model.module.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
+            {'params': model.module.refer_encoder.parameters(), 'lr': args.init_lr * 0.1},
+            {'params': model.module.object_encoder.parameters(), 'lr': args.init_lr},
+            {'params': model.module.obj_feature_mapping.parameters(), 'lr': args.init_lr},
+            {'params': model.module.box_feature_mapping.parameters(), 'lr': args.init_lr},
+            {'params': model.module.language_clf.parameters(), 'lr': args.init_lr},
+            {'params': model.module.object_language_clf.parameters(), 'lr': args.init_lr},
         ]
         if not args.label_lang_sup:
-            param_list.append( {'params':model.module.obj_clf.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.module.obj_clf.parameters(), 'lr': args.init_lr})
     else:
-        param_list=[
-            {'params':model.language_encoder.parameters(),'lr':args.init_lr*0.1},
-            {'params':model.refer_encoder.parameters(), 'lr':args.init_lr*0.1},
-            {'params':model.object_encoder.parameters(), 'lr':args.init_lr},
-            {'params':model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
-            {'params':model.box_feature_mapping.parameters(), 'lr': args.init_lr},
-            {'params':model.language_clf.parameters(), 'lr': args.init_lr},
-            {'params':model.object_language_clf.parameters(), 'lr': args.init_lr},
+        param_list = [
+            {'params': model.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
+            {'params': model.refer_encoder.parameters(), 'lr': args.init_lr * 0.1},
+            {'params': model.object_encoder.parameters(), 'lr': args.init_lr},
+            {'params': model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
+            {'params': model.box_feature_mapping.parameters(), 'lr': args.init_lr},
+            {'params': model.language_clf.parameters(), 'lr': args.init_lr},
+            {'params': model.object_language_clf.parameters(), 'lr': args.init_lr*0.1},
         ]
         if not args.label_lang_sup:
-            param_list.append( {'params':model.obj_clf.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.obj_clf.parameters(), 'lr': args.init_lr})
+        if args.anchors == 'cot':
+            """
+            param_list.append({'params': model.anchors_embedding.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.object_language_clf_anchors.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.fc_out.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.dummy_fc.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.head_final.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.trans_tgt.parameters(), 'lr': args.init_lr})
+            """
+            param_list.append({'params': model.parallel_embedding.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.object_language_clf_parallel.parameters(), 'lr': args.init_lr})
+            param_list.append({'params': model.fc_out.parameters(), 'lr': args.init_lr})
 
-    optimizer = optim.Adam(param_list,lr=args.init_lr)
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,[40, 50, 60, 70, 80, 90], gamma=0.65)
+    optimizer = optim.Adam(param_list, lr=args.init_lr)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [40, 50, 60, 70, 80, 90], gamma=0.65)
 
     start_training_epoch = 1
     best_test_acc = -1
@@ -170,13 +182,14 @@ if __name__ == '__main__':
                 # Train:
                 tic = time.time()
                 train_meters = single_epoch_train(model, data_loaders['train'], criteria, optimizer,
-                                                  device, pad_idx, args=args, tokenizer=tokenizer,epoch=epoch)
+                                                  device, pad_idx, args=args, tokenizer=tokenizer, epoch=epoch)
                 toc = time.time()
                 timings['train'] = (toc - tic) / 60
 
                 # Evaluate:
                 tic = time.time()
-                test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args, tokenizer=tokenizer)
+                test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args,
+                                                  tokenizer=tokenizer)
                 toc = time.time()
                 timings['test'] = (toc - tic) / 60
 
@@ -188,7 +201,7 @@ if __name__ == '__main__':
                 lr_scheduler.step()
 
                 save_state_dicts(osp.join(args.checkpoint_dir, 'last_model.pth'),
-                                     epoch, model=model, optimizer=optimizer, lr_scheduler=lr_scheduler)
+                                 epoch, model=model, optimizer=optimizer, lr_scheduler=lr_scheduler)
 
                 if best_test_acc < eval_acc:
                     logger.info(colored('Test accuracy, improved @epoch {}'.format(epoch), 'green'))
@@ -217,12 +230,13 @@ if __name__ == '__main__':
 
     elif args.mode == 'evaluate':
 
-        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args, tokenizer=tokenizer)
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args,
+                                     tokenizer=tokenizer)
         print('Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
         print('Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
         print('Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
 
         out_file = osp.join(args.checkpoint_dir, 'test_result.txt')
         res = analyze_predictions(model, data_loaders['test'].dataset, class_to_idx, pad_idx, device,
-                                  args, out_file=out_file,tokenizer=tokenizer)
+                                  args, out_file=out_file, tokenizer=tokenizer)
         print(res)

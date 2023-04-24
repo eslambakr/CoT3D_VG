@@ -75,8 +75,10 @@ class ReferIt3DNet_transformer(nn.Module):
         self.dropout_rate = args.dropout_rate
         self.lang_cls_alpha = args.lang_cls_alpha
         self.obj_cls_alpha = args.obj_cls_alpha
+
         self.anchors_mode = args.anchors
         self.cot_type = args.cot_type
+        self.predict_lang_anchors = args.predict_lang_anchors
 
         # TODO:Eslam: make this one generic for Nr3D
         if self.anchors_mode == "cot":
@@ -88,8 +90,14 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             self.ref_out = 1
             self.max_num_anchors = 0
-
-        self.n_obj_classes = n_obj_classes
+        
+        # TODO:Eslam: make this one generic for Nr3D
+        if self.predict_lang_anchors:
+            self.lang_out = 3 
+            self.n_obj_classes = n_obj_classes + 2
+        else:
+            self.lang_out = 1
+            self.n_obj_classes = n_obj_classes
 
         self.object_encoder = PointNetPP(sa_n_points=[32, 16, None],
                                          sa_n_samples=[[32], [32], [None]],
@@ -110,7 +118,7 @@ class ReferIt3DNet_transformer(nn.Module):
         # Classifier heads
         self.language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                           nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                          nn.Linear(self.inner_dim, n_obj_classes))
+                                          nn.Linear(self.inner_dim, self.n_obj_classes*self.lang_out))
 
         if self.anchors_mode == 'cot':
             if self.cot_type == "cross":
@@ -137,7 +145,7 @@ class ReferIt3DNet_transformer(nn.Module):
                                                      nn.Linear(self.inner_dim, self.ref_out))
 
         if not self.label_lang_sup:
-            self.obj_clf = MLP(self.inner_dim, [self.object_dim, self.object_dim, n_obj_classes],
+            self.obj_clf = MLP(self.inner_dim, [self.object_dim, self.object_dim, self.n_obj_classes],
                                dropout_rate=self.dropout_rate)
 
         self.obj_feature_mapping = nn.Sequential(
@@ -213,7 +221,12 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
-        lang_clf_loss = self.lang_logits_loss(LANG_LOGITS, batch['target_class'])
+        if self.predict_lang_anchors:
+            LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, 3).permute(0, 2, 1).reshape(-1, self.n_obj_classes)  # [N*trg_seq_length, num_cls]
+            lang_tgt = torch.cat((batch['anchor_classes'], batch['target_class'].unsqueeze(-1)), dim=-1).reshape(-1).long()  # [N*trg_seq_length]
+            lang_clf_loss = self.lang_logits_loss(LANG_LOGITS, lang_tgt)
+        else:
+            lang_clf_loss = self.lang_logits_loss(LANG_LOGITS, batch['target_class'])
         total_loss = referential_loss + self.obj_cls_alpha * obj_clf_loss + self.lang_cls_alpha * lang_clf_loss
         return total_loss
 
@@ -303,4 +316,8 @@ class ReferIt3DNet_transformer(nn.Module):
         LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS)  # []
         if self.anchors_mode != 'none':
             LOGITS = LOGITS[:, -1]
+        
+        if self.predict_lang_anchors:
+            LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, 3)[:,:,-1]
+        
         return LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS

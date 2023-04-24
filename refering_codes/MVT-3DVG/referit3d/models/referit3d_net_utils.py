@@ -52,6 +52,13 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
     extras = None
     if args.anchors != 'none':
         extras = ['anchors_pos']
+    
+    if args.predict_lang_anchors:
+        if type(extras) == list:
+            extras += ['anchor_classes']
+        else:
+            extras = ['anchor_classes']
+
     batch_keys = make_batch_keys(args, extras)
     for batch in tqdm.tqdm(data_loader):
         # Move data to gpu
@@ -128,7 +135,14 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
 
     extras = None
     if args.anchors != 'none':
-        extras = ['anchors_pos']
+        extras += ['anchors_pos']
+
+    if args.predict_lang_anchors:
+        if type(extras) == list:
+            extras += ['anchor_classes']
+        else:
+            extras = ['anchor_classes']
+
     batch_keys = make_batch_keys(args, extras)
 
     for batch in tqdm.tqdm(data_loader):

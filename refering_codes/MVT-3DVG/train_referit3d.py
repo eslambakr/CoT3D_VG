@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # Parse arguments
     args = parse_arguments()
     # Read the scan related information
-    all_scans_in_dict, scans_split, class_to_idx = load_scan_related_data(args.scannet_file)
+    all_scans_in_dict, scans_split, class_to_idx = load_scan_related_data(args.scannet_file, add_no_obj=args.predict_lang_anchors)
     # Read the linguistic data of ReferIt3D
     referit_data = load_referential_data(args, args.referit3D_file, scans_split)
     # Prepare data & compute auxiliary meta-information.

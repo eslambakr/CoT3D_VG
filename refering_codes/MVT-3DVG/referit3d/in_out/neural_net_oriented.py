@@ -105,7 +105,7 @@ def load_referential_data(args, referit_csv, scans_split):
     return referit_data
 
 
-def load_scan_related_data(preprocessed_scannet_file, verbose=True, add_pad=True):
+def load_scan_related_data(preprocessed_scannet_file, verbose=True, add_pad=True, add_no_obj=False):
     _, all_scans = unpickle_data(preprocessed_scannet_file)
     if verbose:
         print('Loaded in RAM {} scans'.format(len(all_scans)))
@@ -131,6 +131,9 @@ def load_scan_related_data(preprocessed_scannet_file, verbose=True, add_pad=True
     # Add the pad class needed for object classification
     if add_pad:
         class_to_idx['pad'] = len(class_to_idx)
+
+    if add_no_obj:
+        class_to_idx['no_obj'] = len(class_to_idx)
 
     scans_split = scannet_official_train_val()
 

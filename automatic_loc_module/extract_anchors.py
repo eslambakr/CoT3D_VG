@@ -62,78 +62,78 @@ if __name__ == '__main__':
     # Configurations:
     # ---------------
     load_dense = False
-    scannet_dataset_path = "/home/eslam/scannet_dataset/"
-    # scannet_dataset_path = "/media/eslam/0d208863-5cdb-4a43-9794-3ca8726831b3/3D_visual_grounding/dataset/"
+    # scannet_dataset_path = "/home/eslam/scannet_dataset/"
+    # # scannet_dataset_path = "/media/eslam/0d208863-5cdb-4a43-9794-3ca8726831b3/3D_visual_grounding/dataset/"
 
-    # Read the scan related information
-    top_scan_dir = scannet_dataset_path + "scannet/scans"
-    idx_to_semantic_class_file = './referit3d/data/mappings/scannet_idx_to_semantic_class.json'
-    instance_class_to_semantic_class_file = './referit3d/data/mappings/scannet_instance_class_to_semantic_class.json'
-    axis_alignment_info_file = './referit3d/data/scannet/scans_axis_alignment_matrices.json'
-    scannet = ScannetDataset(top_scan_dir,
-                             idx_to_semantic_class_file,
-                             instance_class_to_semantic_class_file,
-                             axis_alignment_info_file)
-    # Loop on the whole scenes and load them once:
-    all_scenes_paths = glob.glob(top_scan_dir+"/*")
-    all_scenes_paths = list(np.unique(np.array(scan_ids)))
-    scenes_dict = {}
-    all_scan_ids = all_scenes_paths
-    n_items = len(all_scan_ids)
-    n_processes = min(mp.cpu_count(), n_items)
-    pool = mp.Pool(n_processes)
-    chunks = int(n_items / n_processes)
+    # # Read the scan related information
+    # top_scan_dir = scannet_dataset_path + "scannet/scans"
+    # idx_to_semantic_class_file = './referit3d/data/mappings/scannet_idx_to_semantic_class.json'
+    # instance_class_to_semantic_class_file = './referit3d/data/mappings/scannet_instance_class_to_semantic_class.json'
+    # axis_alignment_info_file = './referit3d/data/scannet/scans_axis_alignment_matrices.json'
+    # scannet = ScannetDataset(top_scan_dir,
+    #                          idx_to_semantic_class_file,
+    #                          instance_class_to_semantic_class_file,
+    #                          axis_alignment_info_file)
+    # # Loop on the whole scenes and load them once:
+    # all_scenes_paths = glob.glob(top_scan_dir+"/*")
+    # all_scenes_paths = list(np.unique(np.array(scan_ids)))
+    # scenes_dict = {}
+    # all_scan_ids = all_scenes_paths
+    # n_items = len(all_scan_ids)
+    # n_processes = min(mp.cpu_count(), n_items)
+    # pool = mp.Pool(n_processes)
+    # chunks = int(n_items / n_processes)
 
-    for i, data in enumerate(pool.imap(scannet_loader, all_scan_ids, chunksize=chunks)):
-        scenes_dict[all_scan_ids[i]] = data
-    pool.close()
-    pool.join()
+    # for i, data in enumerate(pool.imap(scannet_loader, all_scan_ids, chunksize=chunks)):
+    #     scenes_dict[all_scan_ids[i]] = data
+    # pool.close()
+    # pool.join()
 
-    scences_dict = {}
-    for i in tqdm(range(len(all_scan_ids))):  # Loop on the scenes
-        scan_id = all_scan_ids[i]
-        dummy_scene = scenes_dict[scan_id]
-        obj_list = []
-        for obj in dummy_scene.three_d_objects:
-            obj_points = dummy_scene.pc[obj.points]
-            min_z = obj_points[:, 2].min()
-            max_z = obj_points[:, 2].max()
-            min_x = obj_points[:, 0].min()
-            p1 = [min_x, obj_points[:, 1][list(obj_points[:, 0]).index(min_x)], min_z]
-            p2 = [min_x, obj_points[:, 1][list(obj_points[:, 0]).index(min_x)], max_z]
-            max_x = obj_points[:, 0].max()
-            p3 = [max_x, obj_points[:, 1][list(obj_points[:, 0]).index(max_x)], min_z]
-            p4 = [max_x, obj_points[:, 1][list(obj_points[:, 0]).index(max_x)], max_z]
-            max_y = obj_points[:, 1].max()
-            p5 = [obj_points[:, 0][list(obj_points[:, 1]).index(max_y)], max_y, min_z]
-            p6 = [obj_points[:, 0][list(obj_points[:, 1]).index(max_y)], max_y, max_z]
-            min_y = obj_points[:, 1].min()
-            p7 = [obj_points[:, 0][list(obj_points[:, 1]).index(min_y)], min_y, min_z]
-            p8 = [obj_points[:, 0][list(obj_points[:, 1]).index(min_y)], min_y, max_z]
-            conrners = [p1, p2, p3, p4, p5, p6, p7, p8]
-            obj_list.append({
-                "scan_id": all_scan_ids[i], "object_id": str(obj.object_id).zfill(3),
-                "object_unique_id": all_scan_ids[i].split("scene")[-1].split("_")[0] + str(obj.object_id).zfill(3),
-                "instance_type": obj.instance_label,
-                "x1": str(p1[0]), "y1": str(p1[1]), "z1": str(p1[2]), "x2": str(p2[0]), "y2": str(p2[1]), "z2": str(p2[2]),
-                "x3": str(p3[0]), "y3": str(p3[1]), "z3": str(p3[2]), "x4": str(p4[0]), "y4": str(p4[1]), "z4": str(p4[2]),
-                "x5": str(p5[0]), "y5": str(p5[1]), "z5": str(p5[2]), "x6": str(p6[0]), "y6": str(p6[1]), "z6": str(p6[2]),
-                "x7": str(p7[0]), "y7": str(p7[1]), "z7": str(p7[2]), "x8": str(p8[0]), "y8": str(p8[1]), "z8": str(p8[2])
-            })
+    # scences_dict = {}
+    # for i in tqdm(range(len(all_scan_ids))):  # Loop on the scenes
+    #     scan_id = all_scan_ids[i]
+    #     dummy_scene = scenes_dict[scan_id]
+    #     obj_list = []
+    #     for obj in dummy_scene.three_d_objects:
+    #         obj_points = dummy_scene.pc[obj.points]
+    #         min_z = obj_points[:, 2].min()
+    #         max_z = obj_points[:, 2].max()
+    #         min_x = obj_points[:, 0].min()
+    #         p1 = [min_x, obj_points[:, 1][list(obj_points[:, 0]).index(min_x)], min_z]
+    #         p2 = [min_x, obj_points[:, 1][list(obj_points[:, 0]).index(min_x)], max_z]
+    #         max_x = obj_points[:, 0].max()
+    #         p3 = [max_x, obj_points[:, 1][list(obj_points[:, 0]).index(max_x)], min_z]
+    #         p4 = [max_x, obj_points[:, 1][list(obj_points[:, 0]).index(max_x)], max_z]
+    #         max_y = obj_points[:, 1].max()
+    #         p5 = [obj_points[:, 0][list(obj_points[:, 1]).index(max_y)], max_y, min_z]
+    #         p6 = [obj_points[:, 0][list(obj_points[:, 1]).index(max_y)], max_y, max_z]
+    #         min_y = obj_points[:, 1].min()
+    #         p7 = [obj_points[:, 0][list(obj_points[:, 1]).index(min_y)], min_y, min_z]
+    #         p8 = [obj_points[:, 0][list(obj_points[:, 1]).index(min_y)], min_y, max_z]
+    #         conrners = [p1, p2, p3, p4, p5, p6, p7, p8]
+    #         obj_list.append({
+    #             "scan_id": all_scan_ids[i], "object_id": str(obj.object_id).zfill(3),
+    #             "object_unique_id": all_scan_ids[i].split("scene")[-1].split("_")[0] + str(obj.object_id).zfill(3),
+    #             "instance_type": obj.instance_label,
+    #             "x1": str(p1[0]), "y1": str(p1[1]), "z1": str(p1[2]), "x2": str(p2[0]), "y2": str(p2[1]), "z2": str(p2[2]),
+    #             "x3": str(p3[0]), "y3": str(p3[1]), "z3": str(p3[2]), "x4": str(p4[0]), "y4": str(p4[1]), "z4": str(p4[2]),
+    #             "x5": str(p5[0]), "y5": str(p5[1]), "z5": str(p5[2]), "x6": str(p6[0]), "y6": str(p6[1]), "z6": str(p6[2]),
+    #             "x7": str(p7[0]), "y7": str(p7[1]), "z7": str(p7[2]), "x8": str(p8[0]), "y8": str(p8[1]), "z8": str(p8[2])
+    #         })
 
-            # https://stackoverflow.com/questions/61888228/convert-3d-box-vertices-to-center-dimensions-and-rotation
-            angle = math.atan2(p3[1] - p1[1], p3[0] - p1[0])
-            cx = (p1[0] + p4[0]) / 2
-            cy = (p1[1] + p4[1]) / 2
-            cz = (p1[2] + p4[2]) / 2
-            lx, ly, lz = p4[0] - p1[0], p4[1] - p1[1], p4[2] - p1[2]
-            box = [cx, cy, cz, lx, ly, lz, angle]
-        scences_dict[all_scan_ids[i]] = obj_list
+    #         # https://stackoverflow.com/questions/61888228/convert-3d-box-vertices-to-center-dimensions-and-rotation
+    #         angle = math.atan2(p3[1] - p1[1], p3[0] - p1[0])
+    #         cx = (p1[0] + p4[0]) / 2
+    #         cy = (p1[1] + p4[1]) / 2
+    #         cz = (p1[2] + p4[2]) / 2
+    #         lx, ly, lz = p4[0] - p1[0], p4[1] - p1[1], p4[2] - p1[2]
+    #         box = [cx, cy, cz, lx, ly, lz, angle]
+    #     scences_dict[all_scan_ids[i]] = obj_list
 
-    with open("3d_objs_vertices.json", "w") as write_file:
-        json.dump(scences_dict, write_file)
+    # with open("3d_objs_vertices.json", "w") as write_file:
+    #     json.dump(scences_dict, write_file)
 
-    sdafsdf = asfsdf
+    # sdafsdf = asfsdf
     gt_objs_name_all_scenes = []
     gt_utternaces_all_scenes = []
     pred_objs_name_all_scenes = []

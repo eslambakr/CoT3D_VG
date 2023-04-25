@@ -52,12 +52,12 @@ if __name__ == '__main__':
                                               "colored_utterance": colored_utterance, "missed_objs": [],
                                               "pred_objs_name": pred_objs_name})
                                               """
-            pred_objs_name_all_scenes.append({"colored_utterance": colored_utterance, "missed_objs": [],
+            pred_objs_name_all_scenes.append({"org_utterance": df.utterance[i], "colored_utterance": colored_utterance,
                                               "pred_objs_name": pred_objs_name})
 
     print("Average number of objs per utterance: ", sum(num_objs_per_scene) / len(num_objs_per_scene))
     print("Number of _00 items are: ", unique_counter)
 
     # Save the predicted objects in CSV file for manual verification:
-    pred_objs_name_all_scenes = random.sample(pred_objs_name_all_scenes, 120)
+    pred_objs_name_all_scenes = random.sample(pred_objs_name_all_scenes, 240)
     save_in_csv(lst=pred_objs_name_all_scenes, saving_name="./data/pred_objs_for_manual_verification.csv")

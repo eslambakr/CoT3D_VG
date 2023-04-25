@@ -261,6 +261,7 @@
     "hand rail": "otherstructure",
     "hand sanitzer dispenser": "otherprop",
     "hand towel": "towel",
+    "towel hanging": "towel hanging",
     "handicap bar": "otherstructure",
     "handrail": "otherstructure",
     "hanging": "otherprop",
@@ -427,6 +428,7 @@
     "rod": "otherprop",
     "rolled poster": "otherprop",
     "roomba": "otherprop",
+    "room"  : "room",
     "rope": "otherprop",
     "round table": "table",
     "rug": "otherprop",
@@ -571,6 +573,7 @@
     "tube": "otherprop",
     "tupperware": "otherprop",
     "tv": "television",
+    "television": "television",
     "tv stand": "otherfurniture",
     "umbrella": "otherprop",
     "urinal": "toilet",
@@ -605,5 +608,6 @@
     "wood beam": "otherstructure",
     "workbench": "otherfurniture",
     "xbox controller": "otherprop",
-    "yoga mat": "floor mat"
+    "yoga mat": "floor mat", 
+    "tub": "tub"
 }

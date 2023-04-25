@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/mohama0e/CoT3D_VG/automatic_loc_module/benchmark_auto_obj_extraction_module_sr3d.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "/home/mohama0e/miniconda3/envs/cot3d/bin/python"
+            },
+            "justMyCode": true
+        }
+    ]
+}

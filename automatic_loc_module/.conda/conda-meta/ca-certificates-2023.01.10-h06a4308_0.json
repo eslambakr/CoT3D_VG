@@ -1,0 +1,50 @@
+{
+  "build": "h06a4308_0",
+  "build_number": 0,
+  "channel": "https://repo.anaconda.com/pkgs/main/linux-64",
+  "constrains": [],
+  "depends": [],
+  "extracted_package_dir": "/home/mohama0e/miniconda3/pkgs/ca-certificates-2023.01.10-h06a4308_0",
+  "features": "",
+  "files": [
+    "ssl/cacert.pem",
+    "ssl/cert.pem"
+  ],
+  "fn": "ca-certificates-2023.01.10-h06a4308_0.conda",
+  "legacy_bz2_md5": "5cc97953b9c0731a4e4624761f93b255",
+  "license": "MPL-2.0",
+  "license_family": "Other",
+  "link": {
+    "source": "/home/mohama0e/miniconda3/pkgs/ca-certificates-2023.01.10-h06a4308_0",
+    "type": 1
+  },
+  "md5": "7704989a2ccf6c1f5a50c985509841c4",
+  "name": "ca-certificates",
+  "package_tarball_full_path": "/home/mohama0e/miniconda3/pkgs/ca-certificates-2023.01.10-h06a4308_0.conda",
+  "paths_data": {
+    "paths": [
+      {
+        "_path": "ssl/cacert.pem",
+        "path_type": "hardlink",
+        "sha256": "fb1ecd641d0a02c01bc9036d513cb658bbda62a75e246bedbc01764560a639f0",
+        "sha256_in_prefix": "fb1ecd641d0a02c01bc9036d513cb658bbda62a75e246bedbc01764560a639f0",
+        "size_in_bytes": 216583
+      },
+      {
+        "_path": "ssl/cert.pem",
+        "path_type": "softlink",
+        "sha256": "fb1ecd641d0a02c01bc9036d513cb658bbda62a75e246bedbc01764560a639f0",
+        "size_in_bytes": 216583
+      }
+    ],
+    "paths_version": 1
+  },
+  "requested_spec": "None",
+  "sha256": "55b0c8de2a7a4a0d82b8f4a27d0ef60ba4bed5bf7c907090442f1b42279149e9",
+  "size": 122761,
+  "subdir": "linux-64",
+  "timestamp": 1674218473994,
+  "track_features": "",
+  "url": "https://repo.anaconda.com/pkgs/main/linux-64/ca-certificates-2023.01.10-h06a4308_0.conda",
+  "version": "2023.01.10"
+}

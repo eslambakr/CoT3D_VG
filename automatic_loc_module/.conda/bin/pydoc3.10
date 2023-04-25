@@ -1,0 +1,5 @@
+#!/home/mohama0e/CoT3D_VG/automatic_loc_module/.conda/bin/python3.10
+
+import pydoc
+if __name__ == '__main__':
+    pydoc.cli()

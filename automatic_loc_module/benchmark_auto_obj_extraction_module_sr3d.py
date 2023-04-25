@@ -11,6 +11,7 @@ def read_referring_data_scv(file_path):
 
 
 if __name__ == '__main__':
+    # import pdb; pdb.set_trace()
     df = read_referring_data_scv(file_path="./data/sr3d.csv")
     scan_ids = df.scan_id
     gt_objs_name_all_scenes = []
@@ -19,24 +20,22 @@ if __name__ == '__main__':
     unique_counter = 0
     num_objs_per_scene = []
     # Create our obj retrieval module:
-    obj_extractor = ExtractObjsFromDescription("./data/scannet_instance_class_to_semantic_class.json")
-
+    obj_extractor = ExtractObjsFromDescription("./data/scannet_instance_class_to_semantic_class.json", coloring_type="[]")
     for i in tqdm(range(len(scan_ids))):
         scan_id = scan_ids[i]
-        if True or ("_00" in scan_id):
-            unique_counter = unique_counter + 1
-            # Get Ground-Truth anchors and target objects:
-            gt_objs_name = [df.instance_type[i]]
-            anchors = df.anchors_types[i][1:-1].split(',')
-            for anchor in anchors:
-                gt_objs_name.append(anchor.translate(str.maketrans('', '', string.punctuation)).strip())
-            gt_objs_name_all_scenes.append(gt_objs_name)
-            gt_utternaces_all_scenes.append(df.utterance[i])
+        unique_counter = unique_counter + 1
+        # Get Ground-Truth anchors and target objects:
+        gt_objs_name = [df.instance_type[i]]
+        anchors = df.anchors_types[i][1:-1].split(',')
+        for anchor in anchors:
+            gt_objs_name.append(anchor.translate(str.maketrans('', '', string.punctuation)).strip())
+        gt_objs_name_all_scenes.append(gt_objs_name)
+        gt_utternaces_all_scenes.append(df.utterance[i])
 
-            # Run our obj retrieval module:
-            pred_objs_name = obj_extractor.extract_objs_from_description(utterance=df.utterance[i])
-            num_objs_per_scene.append(len(pred_objs_name))
-            pred_objs_name_all_scenes.append(pred_objs_name)
+        # Run our obj retrieval module:
+        pred_objs_name = obj_extractor.extract_objs_from_description(utterance=df.utterance[i])
+        num_objs_per_scene.append(len(pred_objs_name))
+        pred_objs_name_all_scenes.append(pred_objs_name)
 
     print("Average number of objs per utterance: ", sum(num_objs_per_scene)/len(num_objs_per_scene))
     print("Number of _00 items are: ", unique_counter)
@@ -44,16 +43,18 @@ if __name__ == '__main__':
     true_pos = 0
     false_pos = 0
     for i in tqdm(range(len(pred_objs_name_all_scenes))):
-        for pred_obj in pred_objs_name_all_scenes[i]:
-            true_pos_flag = False
-            for gt_obj in gt_objs_name_all_scenes[i]:
-                if pred_obj in gt_obj:
-                    true_pos_flag = True
-                    true_pos += 1
-                    break
-            if not true_pos_flag:
-                print(pred_obj, "------>", gt_utternaces_all_scenes[i])
-                false_pos += 1
+        # for pred_obj in pred_objs_name_all_scenes[i]:
+        pred_obj = pred_objs_name_all_scenes[i][0]
+        gt_obj = gt_objs_name_all_scenes[i]
+        #sort both pred_obj and gt_obj
+        sorted_pred_obj = sorted(pred_obj)
+        sorted_gt_obj = sorted(gt_obj)
+        if sorted_pred_obj == sorted_gt_obj:
+            true_pos += 1     
+        else:
+            # import pdb; pdb.set_trace()
+            print(pred_obj, "------>", gt_utternaces_all_scenes[i])
+            false_pos += 1
 
     false_neg = 0
     for i in tqdm(range(len(gt_objs_name_all_scenes))):

@@ -134,5 +134,5 @@ dmypy.json
 #delete all files in the .vscode folder and the .conda folder
 .conda/
 .vscode/
-*pem
-*pyc
+*.pem
+*.pyc

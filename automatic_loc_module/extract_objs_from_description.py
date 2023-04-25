@@ -44,7 +44,8 @@ class ExtractObjsFromDescription:
         self.plural_letters = ['s', 'ss', 'sh', 'ch', 'x', 'z']
         self.coloring_type = coloring_type
         self.convert_words_to_standards = {"television": "tv", "couches": "couch", "shelves":"shelf"\
-                                           ,"bookcase":"bookshelf"}
+                                           ,"bookcase":"bookshelf", "its": "it"}
+        self.reverse_convert_words_to_standards = {v: k for k, v in self.convert_words_to_standards.items()}
 
     def read_cls_json(self, file_name):
         f = open(file_name)
@@ -163,11 +164,11 @@ class ExtractObjsFromDescription:
         Get the locations of the input nouns from the input sentence.
         :return: list of locations. the list length should equal the length of the nouns.
         """
+        ip_sentence = self.exclude_symbols(ip_sentence)
         new_string = ip_sentence.translate(str.maketrans('', '', string.punctuation))  # remove punctuation
         irrelevant_words = []
-        # import pdb; pdb.set_trace()
         nouns_loc = []
-        words = new_string.split(" ")
+        words = new_string.split(" ")        
         for noun in nouns:
             if noun in words:
                 temp_noun = noun
@@ -177,10 +178,23 @@ class ExtractObjsFromDescription:
                 temp_noun = noun.split(" ")[0]
             
             #check whether the temp noun exists in the words or not
-            if temp_noun not in words and isIrrelevantWord==True:
-                irrelevant_words.append(noun)
-                continue
-            loc = words.index(temp_noun)
+            # import pdb; pdb.set_trace()
+            # if temp_noun not in words and isIrrelevantWord==True:
+            #     #if this word in self.reverse_convert_words_to_standards[temp_noun] not in words
+            #     if temp_noun in self.reverse_convert_words_to_standards.keys() and self.reverse_convert_words_to_standards[temp_noun] in words:
+            #         break
+            #     irrelevant_words.append(noun)
+            #     continue
+            try:
+                loc = words.index(temp_noun)
+            except:
+                if temp_noun in self.reverse_convert_words_to_standards.keys():
+                    temp_noun = self.reverse_convert_words_to_standards[temp_noun]
+                    loc = words.index(temp_noun)
+                else: 
+                    if isIrrelevantWord==True:
+                        irrelevant_words.append(noun)
+                        continue
             nouns_loc.append(loc)
             # remove the word to handel the case where two repeated words are mentioned
             words[loc] = "Nan"
@@ -279,9 +293,8 @@ class ExtractObjsFromDescription:
             
             found = False
             
-            if noun == "side" or noun == "set":
+            if noun == "side" or noun == "set" or noun == "roll":
                 continue
-            # import pdb; pdb.set_trace()
             #Do Exact Match with a help of Binary Search
             if(BinarySearch(sorted_cls_names, noun) == True):
                 obj_nouns.append(noun)
@@ -319,8 +332,10 @@ class ExtractObjsFromDescription:
                     for cls_name_substring in all_possible_substrings:
                         noun_len = len(noun)
                         cls_name_substring_len = len(cls_name_substring)
-                        if (noun_len > cls_name_substring_len and noun[:cls_name_substring_len] == cls_name_substring)\
-                            or (noun_len < cls_name_substring_len and cls_name_substring[:noun_len] == noun): 
+                        if (noun_len > cls_name_substring_len and noun[:cls_name_substring_len] == cls_name_substring\
+                            and noun_len - cls_name_substring_len <= 2)\
+                            or (noun_len < cls_name_substring_len and cls_name_substring[:noun_len] == noun\
+                                and cls_name_substring_len - noun_len <= 2): 
                             obj_nouns.append(cls_name)
                             found = True
                             break
@@ -382,7 +397,6 @@ class ExtractObjsFromDescription:
                 continue
             new_nouns.append(noun)
         
-        # import pdb; pdb.set_trace()
         nouns = new_nouns
         objs_end_loc = []
         for obj_idx, pred_obj in enumerate(nouns):
@@ -432,7 +446,6 @@ class ExtractObjsFromDescription:
         # Add defined nouns:
         obj_nouns_refined = self.include_user_defined_nouns(utterance=utterance, nouns=obj_nouns_refined)
         # Save the location of each word:
-        # import pdb; pdb.set_trace()
         objs_start_loc, objs_end_loc, pred_objs_mask = self.get_start_and_end_loc_of_objs(ip_sentence=utterance,
                                                                                           nouns=obj_nouns_refined)
         # Add colors to the detected objects:
@@ -441,27 +454,49 @@ class ExtractObjsFromDescription:
 
         return obj_nouns_refined, objs_start_loc, objs_end_loc, colored_utterance, utterance
 
-    def get_subject_phrase(self, ip_sentence):
+    def get_subject_phrase(self, ip_sentence, objects):
+        from spacy.matcher import PhraseMatcher
         doc = self.nlp(ip_sentence)
+        matcher = PhraseMatcher(self.nlp.vocab)
         for token in doc:
-            # import pdb; pdb.set_trace()
             if "subj" in token.dep_:
                 subtree = list(token.subtree)
                 start = subtree[0].i
                 end = subtree[-1].i + 1
                 return doc[start:end]
-
+    #This function does not handle a lot of cases
     def get_phrases_between_2_objs(self, ip_sentence, objs_name):
-        # import pdb; 
-        # pdb.set_trace()
-        nouns_loc,_ = self.get_nouns_loc_in_txt(ip_sentence=ip_sentence, nouns=objs_name, isIrrelevantWord=True)
+        
+        nouns_loc,irrelevant_words = self.get_nouns_loc_in_txt(ip_sentence=ip_sentence, nouns=objs_name, isIrrelevantWord=True)
+        #Sort objs_name and nouns_loc given the nouns_loc order
+        
+        new_nouns = []
+        for noun in objs_name:
+            if noun in irrelevant_words:
+                continue
+            new_nouns.append(noun)
+        
+        objs_name = new_nouns
+        
+        objs_name_loc_mapper = {}
+        for obj_idx, obj_name in enumerate(objs_name):
+            objs_name_loc_mapper[nouns_loc[obj_idx]] = obj_name
+            
+        #Sort the dictinary based on the keys
+        
+        sorted_objs_name_loc_mapper = sorted(objs_name_loc_mapper.items(), key=lambda kv: kv[0])
+        
+
+        nouns_loc = [x[0] for x in sorted_objs_name_loc_mapper]
+        objs_name = [x[1] for x in sorted_objs_name_loc_mapper]
+        
         sub_phrases = []
         sub_phrases_start_obj_loc = []
         sub_phrases_end_obj_loc = []
         for objs_name_idx, obj_loc_idx in enumerate(range(len(nouns_loc) - 1)):
-            start = nouns_loc[obj_loc_idx] + 1  # +1 to skip the object name itself
+            start = nouns_loc[obj_loc_idx] + len(objs_name[objs_name_idx].split(" "))  # +1 to skip the object name itself
             end = nouns_loc[obj_loc_idx + 1]
-            sub_phrase = utterance.split(" ")[start: end]
+            sub_phrase = ip_sentence.split(" ")[start: end]
             sub_phrase = ''.join([s + " " for s in sub_phrase])
             sub_phrases.append(sub_phrase)
             if 'and' in sub_phrase:
@@ -470,7 +505,26 @@ class ExtractObjsFromDescription:
                 sub_phrases_start_obj_loc.append(objs_name_idx)
             sub_phrases_end_obj_loc.append(objs_name_idx + 1)
 
-        return sub_phrases, sub_phrases_start_obj_loc, sub_phrases_end_obj_loc
+        return sub_phrases, sub_phrases_start_obj_loc, sub_phrases_end_obj_loc, objs_name
+
+    def get_start_objs_location(self, doc, objects):
+        """
+            Returning the indices of the objects in the sentence
+        """
+        object_indices = {}
+        for obj in objects:
+            obj_tokens = self.nlp(obj)
+            for i in range(len(doc) - len(obj_tokens) + 1):
+                if all(doc[i + j].text.lower() == obj_tokens[j].text.lower() for j in range(len(obj_tokens))):
+                    object_indices[obj] = i
+                    break
+        return object_indices
+            
+    # def get_phrases_between_2_objs(self, ip_sentence, objs_name):
+        
+    #     doc = self.nlp(ip_sentence)
+    #     obj_indices = self.get_start_objs_location(doc, objs_name)
+    #     #Get the ph
 
     def check_relationship_conflict(self, word_lists):
         """
@@ -494,6 +548,12 @@ class ExtractObjsFromDescription:
                 # means that in this type of relationships only one relation word is found
                 conflict_flag = False
                 return conflict_flag, non_empty_lists[0][0]
+            else: # means that in this type of relationships more than one relation word is found
+                conflict_flag = True
+                # Solve the conflict by getting the longest relationship word:
+                pred_rel_wd = max(non_empty_lists[0], key=len)
+                return conflict_flag, pred_rel_wd
+            
         elif len(word_lists) - empty_counter == 0:  # means no relationship word is detected
             # set the predicted relationship word as None to delete this phrase and candidate objs in the parent function
             return False, None
@@ -506,6 +566,7 @@ class ExtractObjsFromDescription:
             return conflict_flag, pred_rel_wd
 
     def get_relationship_between_2_objs(self, sub_phrases):
+        
         pred_relationship_word_per_phrase = []
         for i, sub_phrase in enumerate(sub_phrases):
             near_words_pred, far_words_pred, up_words_pred, low_words_pred, bet_words_pred, \
@@ -529,8 +590,8 @@ class ExtractObjsFromDescription:
             for rel_word in self.other_words:
                 if re.search(r'\b%s\b' % (re.escape(rel_word)), sub_phrase) is not None:
                     others_words_pred.append(rel_word)
-
             # Check the conflict. If we find multiple relationship words in the same sub-phrase try to solve it:
+            
             conflict_flag, pred_relationship_word = self.check_relationship_conflict(
                 [near_words_pred, far_words_pred, up_words_pred, low_words_pred, bet_words_pred, others_words_pred])
             pred_relationship_word_per_phrase.append(pred_relationship_word)
@@ -560,23 +621,27 @@ if __name__ == '__main__':
     # utterance   = "LOOK DOWN ON ROOM FROM CEILING, CHOOSE BOX LOCATED IN THE CENTER OF THE ROOM, ITS ALSO THE LARGEST BOX TO SELECT."
     # utterance   = "LOOK DOWN ON THE ROOM AS YOU IF YOUR LOOKING IN FROM THE CEILING OF THE ROOM. CHOOSE THE TABLE THAT HAS ONLY 2 CHAIRS AROUND IT. THE OTHER TABLE HAS 4 CHAIRS."
     # utterance   = "There are 2 lamps in the room that look the same, but you need to find the one in the corner.  It has a cream colored vase and a white shade."
+    # utterance     = "the roll of toilet paper on the shelf that is the second one in from the right hand side"
+    # utterance     = "Facing row of plants, it's on far left not the taller plant."
+    utterance    = "pick the only pair of shoes that are on the floor to the right of the couch and to the left of the desk/bunk bed"
     # print(utterance)
-    utterance  = "the smaller of the stall doors"
+    # utterance  = "the smaller of the stall doors"
     obj_extractor = ExtractObjsFromDescription("./data/scannet_instance_class_to_semantic_class.json",
                                                coloring_type="colors")
     objs_name, objs_start_loc, objs_end_loc,\
         colored_utterance, adapted_utterance = obj_extractor.extract_objs_from_description(utterance=utterance)
-    tgt_from_txt = obj_extractor.get_subject_phrase(ip_sentence=utterance.lower())
+    
+    tgt_from_txt = obj_extractor.get_subject_phrase(ip_sentence=utterance.lower(), objects = objs_name)
     print("colored_utterance = ", colored_utterance)
     print("objs_name = ", objs_name)
     print("tgt_from_txt = ", tgt_from_txt)
 
     # Get relationships words:
     print("Extract the phrases between two objects:")
-    sub_phrases, sub_phrases_start_obj_loc, sub_phrases_end_obj_loc = obj_extractor.get_phrases_between_2_objs(
+    sub_phrases, sub_phrases_start_obj_loc, sub_phrases_end_obj_loc, objs_name = obj_extractor.get_phrases_between_2_objs(
         ip_sentence=utterance.lower(), objs_name=objs_name)
-    print("Extract the relationship between two objects:")
     # import pdb; pdb.set_trace()
+    print("Extract the relationship between two objects:")
     pred_relationship_word_per_phrase = obj_extractor.get_relationship_between_2_objs(sub_phrases)
     for i, sub_phrase in enumerate(sub_phrases):
         print(i, "--> phrase:", sub_phrase, ", start_obj:", objs_name[sub_phrases_start_obj_loc[i]],

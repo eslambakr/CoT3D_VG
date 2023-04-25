@@ -47,14 +47,30 @@ if __name__ == '__main__':
                 utterance=df.utterance[i])
             num_objs_per_scene.append(len(pred_objs_name))
 
-            """
-            pred_objs_name_all_scenes.append({"adapted_utterance": adapted_utterance, "org_utterance": df.utterance[i],
-                                              "colored_utterance": colored_utterance, "missed_objs": [],
-                                              "pred_objs_name": pred_objs_name})
-                                              """
-            pred_objs_name_all_scenes.append({"org_utterance": df.utterance[i], "colored_utterance": colored_utterance,
-                                              "pred_objs_name": pred_objs_name})
+            #Relationship between objects
+            sub_phrases, sub_phrases_start_obj_loc, sub_phrases_end_obj_loc, objs_name = obj_extractor.get_phrases_between_2_objs(\
+                ip_sentence=df.utterance[i].lower(), objs_name=pred_objs_name)
 
+            
+            
+            #Extract the relationship words in sentences
+            pred_relationship_word_per_phrase = obj_extractor.get_relationship_between_2_objs(sub_phrases)
+            
+            start_obj_name = []
+            end_obj_name   = []
+            for i, sub_phrase in enumerate(sub_phrases):
+                # print(i, "--> phrase:", sub_phrase, ", start_obj:", objs_name[sub_phrases_start_obj_loc[i]],
+                #     ", end_obj:", objs_name[sub_phrases_end_obj_loc[i]], ", relation:", pred_relationship_word_per_phrase[i])
+                start_obj_name.append(objs_name[sub_phrases_start_obj_loc[i]])
+                end_obj_name.append(objs_name[sub_phrases_end_obj_loc[i]])
+            
+            pred_objs_name_all_scenes.append({"org_utterance": adapted_utterance,
+                                              "colored_utterance": colored_utterance,
+                                              "pred_objs_name": pred_objs_name,
+                                              "phrases" : sub_phrases,
+                                              "start_obj_name" : start_obj_name,
+                                              "end_obj_name" : end_obj_name,
+                                              "pred_relationship_word_per_phrase" : pred_relationship_word_per_phrase})
     print("Average number of objs per utterance: ", sum(num_objs_per_scene) / len(num_objs_per_scene))
     print("Number of _00 items are: ", unique_counter)
 

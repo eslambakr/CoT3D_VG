@@ -1,241 +1,241 @@
-org_utterance,colored_utterance,pred_objs_name
-The computer tower that is is the corner of the room neat a radiator.,the [computer] [tower] that is is the corner of the [room] neat [radiator] ,"['computer tower', 'room', 'radiator']"
-"This couch is the largest, it looks like two pieces pushed together to form an L shape.",this [couch] is the largest [it] looks like two pieces pushed together to form an shape ,"['couch', 'it']"
-The largest cabinet.,the largest [cabinet] ,['cabinet']
-"When facing the bed, the lamp is on the nightstand in the corner and to the left of the bed.",when facing the [bed] the [lamp] is on the [nightstand] in the corner and to the left of the [bed] ,"['bed', 'lamp', 'nightstand', 'bed']"
-the picture above the chairs and has stripes in it,the [picture] above the [chairs] and has stripes in [it] ,"['picture', 'chairs', 'it']"
-Find the off-white towel that is hanging on the wall.,find the off white [towel] that is [hanging] on the [wall] ,"['towel', 'wall', 'hanging']"
-shelf facing out to red chair,[shelf] facing out to red [chair] ,"['shelf', 'chair']"
-"In the row of three monitors, the middle monitor.",in the row of three [monitors] the middle [monitor] ,"['monitors', 'monitor']"
-Turn to face the sink and it's the kitchen cabinet above the sink.,turn to face the [sink] and [it] the [kitchen] [cabinet] above the [sink] ,"['sink', 'kitchen cabinet', 'sink', 'it']"
-cabinet to the left of the fridge,[cabinet] to the left of the fridge ,['cabinet']
-The pillow on the right side of the bed under a pillow,the [pillow] on the right side of the [bed] under [pillow] ,"['pillow', 'bed', 'pillow']"
-Trash can directly behind the white standing fan.,[trash] [can] directly behind the white standing [fan] ,"['trash can', 'fan']"
-It is the chair against the long wall.,[it] is the [chair] against the long [wall] ,"['chair', 'wall', 'it']"
-Its the black chair in front of the desk with a female astronaut above it.,[its] the black [chair] in front of the [desk] with female astronaut above [it] ,"['chair', 'desk', 'it', 'its']"
-The correct monitor is the one closest to the red chair.,the correct [monitor] is the one closest to the red [chair] ,"['monitor', 'chair']"
-The armchair on the right when facing the wall without a picture on it,the [armchair] on the right when facing the [wall] without [picture] on [it] ,"['armchair', 'wall', 'picture', 'it']"
-'The lamp to the left of the desk. NOT the lamp between the beds.',the [lamp] to the left of the [desk] not the [lamp] between the [beds] ,"['lamp', 'desk', 'lamp', 'beds']"
-To your right of the cooker,to your right of the cooker ,[]
-The roll of toilet paper above the wastebasket next to the toilet,the roll of [toilet] [paper] above the wastebasket next to the [toilet] ,"['rolled poster', 'toilet paper', 'toilet']"
-You are looking at 4 boxes containing tables. Orient yourself so the whiteboard is on your right. The table you want is against the wall/window. The table you want is on the right. It is an end table and is placed horizontally against the wall/window.,you are looking at [boxes] containing [tables] orient yourself so the [whiteboard] is on your right the [table] you want is against the [wall] or [window] the [table] you want is on the right [it] is an [end] [table] and is placed horizontally against the [wall] or window ,"['boxes', 'tables', 'whiteboard', 'table', 'wall', 'table', 'end table', 'wall', 'window', 'it']"
-The board is in the center of the two long tables with six chairs,the [board] is in the center of the two long [tables] with six [chairs] ,"['board', 'tables', 'chairs']"
-The monitor with one chair in front of it,the [monitor] with one [chair] in front of [it] ,"['monitor', 'chair', 'it']"
-"Walk through the archway door into a smaller space, and this picture is next to a rectangular door.",walk through the archway [door] into smaller space and this [picture] is next to rectangular [door] ,"['door', 'picture', 'door']"
-"It's the lower of the two high, stacked bins.",[it] the lower of the two high stacked [bins] ,"['bins', 'it']"
-the larger table,the larger [table] ,['table']
-These bookshelves are toward the middle of the long row.,these [bookshelves] are toward the middle of the long row ,['bookshelves']
-Choose the monitor located in front of the black computer chair.,choose the [monitor] located in front of the black computer [chair] ,"['monitor', 'chair']"
-The big picture by door near the stairs/seating area,the big [picture] by [door] near the [stairs] or [seating] area ,"['picture', 'door', 'stairs', 'seating']"
-The window closer to the green chair,the [window] closer to the green [chair] ,"['window', 'chair']"
-The bar behind the toilet.,the [bar] behind the [toilet] ,"['bar', 'toilet']"
-Small and comfortable that is closest to the entrance.,small and comfortable that is closest to the entrance ,[]
-"In the cluster of toilet paper rolls, it's the smallest one on your far left when facing them.",in the cluster of [toilet] [paper] rolls [it] the smallest one on your far left when facing them ,"['toilet paper', 'it']"
-whiteboard with the table with 3 chairs in front of it,[whiteboard] with the [table] with [chairs] in front of [it] ,"['whiteboard', 'table', 'chairs', 'it']"
-"the furthest window from the table, near the couches",the furthest [window] from the [table] near the couches ,"['window', 'table']"
-"if you are looking at the picture with the couch to the left and beds to the right, the backpack is to the right of the dresser on the floor.",if you are looking at the [picture] with the [couch] to the left and [beds] to the right the [backpack] is to the right of the [dresser] on the [floor] ,"['picture', 'couch', 'beds', 'backpack', 'dresser', 'floor']"
-The smaller bookcase.,the smaller bookcase ,[]
-First bag located closet to the telephone on the left side of the bed.,first [bag] located [closet] to the [telephone] on the left side of the [bed] ,"['bag', 'closet', 'telephone', 'bed']"
-"The red, horizontal box on the left.",the red horizontal [box] on the left ,['box']
-The bed closest to the window.,the [bed] closest to the [window] ,"['bed', 'window']"
-"of the two cabinets at the bottom of the table, pick the one on your right",of the two [cabinets] at the bottom of the [table] pick the one on your right ,"['cabinets', 'table']"
-The side table between the bed and the chair.,the [side] [table] between the [bed] and the [chair] ,"['side table', 'bed', 'chair']"
-"On the table with the row of 4 keyboards, this is the keyboard that is the second closest to the blue door.",on the [table] with the row of [keyboards] this is the [keyboard] that is the second closest to the blue [door] ,"['table', 'keyboards', 'keyboard', 'door']"
-the bathroom stall on the left with a toilet,the [bathroom] [stall] on the left with [toilet] ,"['bathroom stall', 'toilet']"
-the books are the second highest from the top,the [books] are the second highest from the top ,['books']
-The chair underneath the 2 pictures.,the [chair] underneath the [pictures] ,"['chair', 'pictures']"
-you are looking for a chair located at a table.  You will see a book shelf.  You want to select a chair that is closest to the windows and against the wall,you are looking for [chair] located at [table] you will see [book] [shelf] you want to select [chair] that is closest to the [windows] and against the [wall] ,"['chair', 'table', 'book shelf', 'chair', 'windows', 'wall']"
-"Facing the windows, the window on the right.",facing the [windows] the [window] on the right ,"['windows', 'window']"
-Smallest chair furthest from the light brown table's,smallest [chair] furthest from the [light] brown [table] ,"['chair', 'table', 'light']"
-The correct shelf is closest to the door.,the correct [shelf] is closest to the [door] ,"['shelf', 'door']"
-This is the angled bookshelf far away from the corner of bookshelfs,this is the angled [bookshelf] far away from the corner of [bookshelfs] ,"['bookshelf', 'bookshelfs']"
-roll standing on a toilet in the middle,roll standing on [toilet] in the middle ,['toilet']
-The office chair that is across from the copier and is not facing a desk,the [office] [chair] that is across from the [copier] and is not facing [desk] ,"['office chair', 'copier', 'desk']"
-"If your back is against the door facing the room, the correct trash can is the one to your immediate right, not the one on the other side of the room next to the windows.",if your back is against the [door] facing the [room] the correct [trash] [can] is the one to your immediate right not the one on the other side of the [room] next to the [windows] ,"['door', 'room', 'trash can', 'room', 'windows']"
-the chair that is white in color,the [chair] that is white in color ,['chair']
-The armchair with the small sqaure table next to it,the [armchair] with the small sqaure [table] next to [it] ,"['armchair', 'table', 'it']"
-select the toilet paper nearest the urinal,select the [toilet] [paper] nearest the [urinal] ,"['toilet paper', 'urinal']"
-towel hanging on the shower curtain rod,[towel] [hanging] on the [shower] [curtain] [rod] ,"['towel', 'shower curtain rod', 'hanging']"
-Choose the green ottoman that is in the corner near the TV.,choose the green [ottoman] that is in the corner near the [tv] ,"['tv', 'ottoman']"
-The picture next to the red chair.,the [picture] next to the red [chair] ,"['picture', 'chair']"
-door closest to the brown desk,[door] closest to the brown [desk] ,"['door', 'desk']"
-"When standing in the middle of the room facing the beds, the correct pillow is closest to the window, on the left bed.",when standing in the middle of the [room] facing the [beds] the correct [pillow] is closest to the [window] on the left [bed] ,"['room', 'beds', 'pillow', 'window', 'bed']"
-The table turned upside down on top of another table in the corner of the room by itself.,the [table] turned upside down on top of another [table] in the corner of the [room] by itself ,"['table', 'table', 'room']"
-Of the two sets in front of the white cabinet choose the set on the left,of the two sets in front of the white [cabinet] choose the set on the left ,['cabinet']
-The table closest to the white board on the wall.,the [table] closest to the white [board] on the [wall] ,"['table', 'wall', 'board']"
-This painting is not the one in the corner.,this [painting] is not the one in the corner ,['painting']
-The cabinets to the right of the refrigerator,the [cabinets] to the right of the [refrigerator] ,"['cabinets', 'refrigerator']"
-lamp in between the beds,[lamp] in between the [beds] ,"['lamp', 'beds']"
-The black dresser next to the closet.,the black [dresser] next to the [closet] ,"['dresser', 'closet']"
-Please click the picture in the corner next to the white board,please click the [picture] in the corner next to the white [board] ,"['picture', 'board']"
-"Looking at the art on the wall, the chair underneath the art on the right.",looking at the art on the [wall] the [chair] underneath the art on the right ,"['wall', 'chair']"
-the chair on the right-hand side of the table,the [chair] on the right hand side of the [table] ,"['chair', 'table']"
-When looking at the couch it is the pillow on the right.,when looking at the [couch] [it] is the [pillow] on the right ,"['couch', 'pillow', 'it']"
-The window furthest away from the wall mounted TV,the [window] furthest away from the [wall] mounted [tv] ,"['window', 'wall', 'tv']"
-curtain nearest the piano,[curtain] nearest the [piano] ,"['curtain', 'piano']"
-"Facing the coffee makers, the coffee maker that is the second from the left.",facing the [coffee] [makers] the [coffee] [maker] that is the second from the left ,"['coffee makers', 'coffee maker']"
-The trash can nearest the door,the [trash] [can] nearest the [door] ,"['trash can', 'door']"
-pick the pillow that's not next to massage chair,pick the [pillow] that not next to [massage] [chair] ,"['pillow', 'massage chair']"
-The correct window is smaller and next to the computers.,the correct [window] is smaller and next to the computers ,['window']
-"On the side with one chair, that chair.",on the side with one [chair] that [chair] ,"['chair', 'chair']"
-the lamp is around the lap in the corner next to the bed.,the [lamp] is around the lap in the corner next to the [bed] ,"['lamp', 'bed']"
-"The correct shoes are closest to the dark backpack on the ground. They are beside a slender, tall white box.",the correct [shoes] are closest to the dark [backpack] on the ground they are beside slender tall white [box] ,"['shoes', 'backpack', 'box']"
-the board leaning against the wall closest to the table.,the [board] leaning against the [wall] closest to the [table] ,"['board', 'wall', 'table']"
-Door across the room from the blue picture.,[door] across the [room] from the blue [picture] ,"['door', 'room', 'picture']"
-The monitor farthest from the windows.,the [monitor] farthest from the [windows] ,"['monitor', 'windows']"
-desk with only 1 computer monitor on,[desk] with only computer [monitor] on ,"['desk', 'monitor']"
-the shelf right next to the open door,the [shelf] right next to the open [door] ,"['shelf', 'door']"
-The plant is sitting next to the toilet.,the [plant] is sitting next to the [toilet] ,"['plant', 'toilet']"
-The picture that is closest to the bed,the [picture] that is closest to the [bed] ,"['picture', 'bed']"
-horizontal rail between toilet and sink,horizontal [rail] between [toilet] and [sink] ,"['rail', 'toilet', 'sink']"
-"if looking at the whiteboard, it's the chair in the center of the two tables, farthest away from the whiteboard.",if looking at the [whiteboard] [it] the [chair] in the center of the two [tables] farthest away from the [whiteboard] ,"['whiteboard', 'chair', 'tables', 'whiteboard', 'it']"
-Look at the two tables that are against the wood wall. Choose the table with the black jacket sitting on it's corner.,look at the two [tables] that are against the wood [wall] choose the [table] with the black [jacket] sitting on [it] corner ,"['tables', 'wall', 'table', 'jacket', 'it']"
-The window on the right side of the bed.,the [window] on the right side of the [bed] ,"['window', 'bed']"
-The towel on the wall that is LOWER,the [towel] on the [wall] that is lower ,"['towel', 'wall']"
-Door next to what appears to be a red vaccum,[door] next to what appears to be red vaccum ,['door']
-The couch pillow with the boldest design in the middle,the couch [pillow] with the boldest design in the middle ,['pillow']
-the backpack on the floor and below the whiteboard,the [backpack] on the [floor] and below the [whiteboard] ,"['backpack', 'floor', 'whiteboard']"
-the longest couch under the painting,the longest [couch] under the [painting] ,"['couch', 'painting']"
-"Looking at the fridge and sink, it is the chair at the table to the right side",looking at the fridge and [sink] [it] is the [chair] at the [table] to the right side ,"['chair', 'table', 'sink', 'it']"
-chair in corner with woman wearing blue pants and pink shirt,[chair] in corner with woman wearing blue [pants] and pink [shirt] ,"['chair', 'pants', 'shirt']"
-"Facing the foot of the bed, the cabinet in the far upper right corner.",facing the foot of the [bed] the [cabinet] in the far upper right corner ,"['bed', 'cabinet']"
-the chair in front of the window,the [chair] in front of the [window] ,"['chair', 'window']"
-The trashcan closest to the information board.,the [trashcan] closest to the information [board] ,"['trashcan', 'board']"
-The smaller of the shelves.,the smaller of the shelves ,['shelf']
-Select the door that is not opposite the bed.,select the [door] that is not opposite the [bed] ,"['door', 'bed']"
-White sheer curtains between two dark curtains.,white sheer [curtains] between two dark [curtains] ,"['curtains', 'curtains']"
-the chair with a red backpack,the [chair] with red [backpack] ,"['chair', 'backpack']"
-The higher of the plants.,the higher of the [plants] ,['plants']
-The window that is above the brown desk.,the [window] that is above the brown [desk] ,"['window', 'desk']"
-Full row on your right of the table,full row on your right of the [table] ,['table']
-The couch is the far right corner couch to the left of the large brown table in the middle right of the room.,the [couch] is the far right corner [couch] to the left of the large brown [table] in the middle right of the [room] ,"['couch', 'couch', 'table', 'room']"
-Choose the kitchen cabinet above the stove.,choose the [kitchen] [cabinet] above the [stove] ,"['kitchen cabinet', 'stove']"
-The black and white picture over the dresser,the black and white [picture] over the [dresser] ,"['picture', 'dresser']"
-"When standing in the room facing towards the windows and keyboards, the correct keyboard is closest to the windows on the left hand side.",when standing in the [room] facing towards the [windows] and [keyboards] the correct [keyboard] is closest to the [windows] on the left hand side ,"['room', 'windows', 'keyboard', 'windows', 'keyboards']"
-The chair closest to the smaller whiteboard.,the [chair] closest to the smaller [whiteboard] ,"['chair', 'whiteboard']"
-"If you are facing the windows, it is the closest chair to the windows on the right.",if you are facing the [windows] [it] is the closest [chair] to the [windows] on the right ,"['windows', 'chair', 'windows', 'it']"
-The bottle between the toaster oven and other bottle.  While looking at the counter its the bottle on the left.,the [bottle] between the [toaster] [oven] and other [bottle] while looking at the [counter] [its] the [bottle] on the left ,"['bottle', 'toaster oven', 'bottle', 'counter', 'bottle', 'its']"
-The towel closest to the door.,the [towel] closest to the [door] ,"['towel', 'door']"
-"if looking at the two chairs from the ottoman/table, the chair on the right",if looking at the two [chairs] from the [ottoman] or [table] the [chair] on the right ,"['chairs', 'ottoman', 'table', 'chair']"
-The bottle right above the sink on the left.,the [bottle] right above the [sink] on the left ,"['bottle', 'sink']"
-"where there is four trash cans, pick the one right in the corner",where there is four [trash] [cans] pick the one right in the corner ,['trash cans']
-"In the right corner, the office chair that is at the end of the round table and closest to the red and white walls.",in the right corner the [office] [chair] that is at the [end] [of] the [round] [table] and closest to the red and white [walls] ,"['office chair', 'end table', 'round table', 'walls']"
-bed beside heater,[bed] beside [heater] ,"['bed', 'heater']"
-"If you stand facing the windows, this table is the left one of the two furthers from the windows.",if you [stand] facing the [windows] this [table] is the left one of the two furthers from the [windows] ,"['windows', 'table', 'windows', 'stand']"
-chair furthest from windows,[chair] furthest from [windows] ,"['chair', 'windows']"
-bin nearest the blackboard,[bin] nearest the [blackboard] ,"['bin', 'blackboard']"
-the toilet paper with paper hanging down from the roll.,the [toilet] [paper] with paper [hanging] down from the roll ,"['toilet paper', 'paper', 'rolled poster', 'hanging']"
-the chair furthest away from the door,the [chair] furthest away from the [door] ,"['chair', 'door']"
-"This pillow is on the side of the couch near the refridgerator, and is closest to the table/floor",this [pillow] is on the side of the [couch] near the refridgerator and is closest to the [table] or [floor] ,"['pillow', 'couch', 'table', 'floor']"
-file cabinet at the end of the table to the right,[file] [cabinet] at the [end] [of] the [table] to the right ,"['file cabinet', 'end table', 'table']"
-the curtains with nothing in from of it,the [curtains] with nothing in from of [it] ,"['curtains', 'it']"
-The center picture that is directly under the light,the center [picture] that is directly under the [light] ,"['picture', 'light']"
-Choose the window that is closest to the white door.,choose the [window] that is closest to the white [door] ,"['window', 'door']"
-chair close to another chair but furthest from sink,[chair] close to another [chair] but furthest from [sink] ,"['chair', 'chair', 'sink']"
-The correct bed is closer to the windows.,the correct [bed] is closer to the [windows] ,"['bed', 'windows']"
-The object you are looking for is a box.  The box is white with a brown blob on the front. The box is sitting on top of a blue box.,the [object] you are looking for is [box] the [box] is white with brown blob on the front the [box] is sitting on top of blue box ,"['object', 'box', 'box', 'box']"
-"When sitting at the long able, I am the first round table from the left",when sitting at the long able am the first [round] [table] from the left ,['round table']
-When having the 3 tables at the top of the image. It is the right table in the square on the middle,when having the [tables] at the top of the image [it] is the right [table] in the square on the middle ,"['tables', 'table', 'it']"
-"Looking at the two groups of chairs, choose the group on the left and then the chair that is closest to the center of the room.",looking at the two groups of [chairs] choose the group on the left and then the [chair] that is closest to the center of the [room] ,"['chairs', 'chair', 'room']"
-Its the rectangular trash ca in between another rectangular trash can a cylindrical one,[its] the rectangular [trash] [ca] in between another rectangular [trash] [can] cylindrical one ,"['trash cabinet', 'trash can', 'can', 'its']"
-It is the pillow furthest from the curtains.,[it] is the [pillow] furthest from the [curtains] ,"['pillow', 'curtains', 'it']"
-"When facing the bed, choose the pillow that is in the middle of the two other pillows on the bed.",when facing the [bed] choose the [pillow] that is in the middle of the two other [pillows] on the [bed] ,"['bed', 'pillow', 'pillows', 'bed']"
-cabinet to the left of the blue bed.,[cabinet] to the left of the blue [bed] ,"['cabinet', 'bed']"
-"The set of books that is to the right of the computer monitor, on the corner of the desk",the set of [books] that is to the right of the computer [monitor] on the corner of the [desk] ,"['books', 'monitor', 'desk']"
-"Standing in the room with the window on your right, we are looking for a pillow that is on top of another pillow and is closest to the window",standing in the [room] with the [window] on your right we are looking for [pillow] that is on top of another [pillow] and is closest to the [window] ,"['room', 'window', 'pillow', 'pillow', 'window']"
-the armchair closest to the dark brown shelf,the [armchair] closest to the dark brown [shelf] ,"['armchair', 'shelf']"
-a box on the dining room table,[box] on the dining room [table] ,"['box', 'table']"
-"The larger chair, closest to a window.",the larger [chair] closest to [window] ,"['chair', 'window']"
-"You are looking at 4 boxes containing sofa chairs. Orient yourself so you are looking at the wall with the sofa chairs.  The sofa chair you want has a gray stool in front of it.  The sofa chair is in the grouping on the left. Within that grouping, it is the one to the right, on the inside.",you are looking at [boxes] containing [sofa] [chairs] orient yourself so you are looking at the [wall] with the [sofa] chairs the [sofa] [chair] you want has gray [stool] in front of [it] the [sofa] [chair] is in the grouping on the left within that grouping it is the one to the right on the inside ,"['boxes', 'sofa chairs', 'wall', 'sofa', 'sofa chair', 'stool', 'sofa chair', 'it']"
-The towel on the bathroom floor,the [towel] on the bathroom [floor] ,"['towel', 'floor']"
-The soap dish behind the glass enclosure on the highest shelf.,the [soap] [dish] behind the [glass] enclosure on the highest [shelf] ,"['soap dish', 'glass', 'shelf']"
-The door with the men's restroom label on it.,the [door] with the men restroom label on [it] ,"['door', 'it']"
-The couch diagonal to a corner.,the [couch] diagonal to corner ,['couch']
-The chair closest to the window.,the [chair] closest to the [window] ,"['chair', 'window']"
-The Frame at the top closest to the door or on the left if you are facing them,the [frame] at the top closest to the [door] or on the left if you are facing them ,"['frame', 'door']"
-The smaller of the two monitors closest to the television.,the smaller of the two [monitors] closest to the television ,"['monitors', 'tv']"
-The chair alongside this one has a blue backpack on it.,the [chair] alongside this one has blue [backpack] on [it] ,"['chair', 'backpack', 'it']"
-the larger whiteboard farthest from the seats and the nearest to the white table,the larger [whiteboard] farthest from the [seats] and the nearest to the white [table] ,"['whiteboard', 'seats', 'table']"
-Window to the left of the other near the whiteboard,[window] to the left of the other near the [whiteboard] ,"['window', 'whiteboard']"
-"'Standing, facing the perpendicular bookshelf, it is the closest lamp on the left.'",standing facing the perpendicular [bookshelf] [it] is the closest [lamp] on the left ,"['bookshelf', 'lamp', 'it']"
-The lap between the grey sofa and chair near the window,the lap between the grey [sofa] and [chair] near the [window] ,"['sofa', 'chair', 'window']"
-The small towel hanging on the rack.,the small [towel] [hanging] on the [rack] ,"['towel', 'rack', 'hanging']"
-individual table against the wall with a green chalk board,individual [table] against the [wall] with green chalk [board] ,"['table', 'wall', 'board']"
-"When facing the toilet, it is the lower, right towel in the stack above the toilet.",when facing the [toilet] [it] is the lower right [towel] in the [stack] [above] [the] [toilet] ,"['toilet', 'towel', 'stack of chairs', 'toilet', 'it']"
-black office chair closest to window,black [office] [chair] closest to [window] ,"['office chair', 'window']"
-pick the bed nearest the chair and art,pick the [bed] nearest the [chair] and art ,"['bed', 'chair']"
-"There are two chairs that are next to each other. Pick the one closest to the door. If you face the chairs, it is on the right.",there are two [chairs] that are next to each other pick the one closest to the [door] if you face the [chairs] [it] is on the right ,"['chairs', 'door', 'chairs', 'it']"
-Choose the window that is closest to the rug on the floor,choose the [window] that is closest to the [rug] on the [floor] ,"['window', 'rug', 'floor']"
-"if looking at the window from the middle of the room, the desk in the back row in the middle.",if looking at the [window] from the middle of the [room] the [desk] in the back row in the middle ,"['window', 'room', 'desk']"
-"position the room so you face the front of two light colored chairs, pictures are on the wall to the right, choose the box on the left, closest to the two seat couch.",position the [room] so you face the front of two [light] colored chairs [pictures] are on the [wall] to the right choose the [box] on the left closest to the two seat [couch] ,"['room', 'pictures', 'wall', 'box', 'couch', 'light']"
-The red folder or binder that is on the 2nd book shelf from the left.,the red [folder] or [binder] that is on the 2nd [book] [shelf] from the left ,"['folder', 'binder', 'book shelf']"
-cabinet in the center of the room,[cabinet] in the center of the [room] ,"['cabinet', 'room']"
-"When facing the couch with striped pillows, this table is at the left.",when facing the [couch] with striped [pillows] this [table] is at the left ,"['couch', 'pillows', 'table']"
-Choose the highest book.,choose the highest [book] ,['book']
-the white table next to the green-backed sofas.,the white [table] next to the green backed [sofas] ,"['table', 'sofas']"
-The armchair on the left and opposite the blue wall.,the [armchair] on the left and opposite the blue [wall] ,"['armchair', 'wall']"
-The blue couch closer to the pool table.,the blue [couch] closer to the [pool] [table] ,"['couch', 'pool table']"
-The sink in the middle of the island,the [sink] in the middle of the island ,['sink']
-'The lamp not on the head post of the bed.',the [lamp] not on the head post of the [bed] ,"['lamp', 'poster cutter', 'bed']"
-"Looking up front the end of the bed, choose the pillow on the right side of the bed.",looking up front the [end] [of] the [bed] choose the [pillow] on the right side of the [bed] ,"['end table', 'bed', 'pillow', 'bed']"
-The shorter cabinet.,the shorter [cabinet] ,['cabinet']
-first one on the back row,first one on the back row ,[]
-The toilet paper is nearer to the sink,the [toilet] [paper] is nearer to the [sink] ,"['toilet paper', 'sink']"
-Choose the cabinet that is under the beverage machine that sits by the microwave. This cabinet is closest to the window.,choose the [cabinet] that is under the beverage [machine] that sits by the [microwave] this [cabinet] is closest to the [window] ,"['cabinet', 'machine', 'microwave', 'cabinet', 'window']"
-This backpack is between the armchair and the bed.,this [backpack] is between the [armchair] and the [bed] ,"['backpack', 'armchair', 'bed']"
-"When looking at the three circular, white tables from the long, rectangular table, it's the table on the far left.",when looking at the three circular white [tables] from the long rectangular [table] [it] the [table] on the far left ,"['tables', 'table', 'table', 'it']"
-An orange towel hanging in the bathroom.,an orange [towel] [hanging] in the [bathroom] ,"['towel', 'bathroom cabinet', 'hanging']"
-The sink in the kitchen.,the [sink] in the [kitchen] ,"['sink', 'kitchen apron']"
-"Facing the side with 2 cabinets, it's the cabinet on the right.",facing the side with [cabinets] [it] the [cabinet] on the right ,"['cabinets', 'cabinet', 'it']"
-It is the trash can in the shower next to the sink.,[it] is the [trash] [can] in the [shower] next to the [sink] ,"['trash can', 'shower', 'sink', 'it']"
-The shelf you are looking for has 5 white shelves.,the shelf you are looking for has white shelves ,"['shelf', 'shelf']"
-"On the row of desks with four monitors, you are looking for the second monitor from the end closest to the blue door.",on the row of [desks] with four [monitors] you are looking for the second [monitor] from the [end] [closest] to the blue [door] ,"['desks', 'monitors', 'monitor', 'end table', 'door']"
-"the mouse in the middle, not at either end.",the [mouse] in the middle not at either [end] ,"['mouse', 'end table']"
-the computer chair tuck into desk in front of wall shelf,the computer [chair] tuck into [desk] in front of wall [shelf] ,"['chair', 'desk', 'shelf']"
-This window is the one behind the red ottoman.,this [window] is the one behind the red [ottoman] ,"['window', 'ottoman']"
-The door at the foot of the bed,the [door] at the foot of the [bed] ,"['door', 'bed']"
-The whiteboard that is in a corner next to the row of chairs.,the [whiteboard] that is in corner next to the row of [chairs] ,"['whiteboard', 'chairs']"
-Cabot under Kutcher sink,cabot under kutcher [sink] ,['sink']
-Stand with your back to the toilet and walk straight ahead.,[stand] with your back to the [toilet] and walk straight ahead ,"['stand', 'toilet']"
-"Looking toward the wall of monitors, it's the one on the left. Closest to the desk",looking toward the [wall] of [monitors] [it] the one on the left closest to the [desk] ,"['wall', 'monitors', 'desk', 'it']"
-"If you stand with the bookshelf across from you, the chair is the 2nd closest one to the bookshelf, the right hand one on the long side of the table.",if you [stand] with the [bookshelf] across from you the [chair] is the 2nd closest one to the [bookshelf] the right [hand] [one] on the long side of the [table] ,"['bookshelf', 'chair', 'bookshelf', 'hand dryer', 'table', 'stand']"
-When facing the couches it is the table that is in the middle.,when facing the couches [it] is the [table] that is in the middle ,"['table', 'it']"
-The black chair at the table.,the black [chair] at the [table] ,"['chair', 'table']"
-Its the sofa chair with a human being on it.,[its] the [sofa] [chair] with human being on [it] ,"['sofa chair', 'it', 'its']"
-This bookshelf sits behind a gray office chair in the corner of the room.,this [bookshelf] sits behind gray [office] [chair] in the corner of the [room] ,"['bookshelf', 'office chair', 'room']"
-The chair is a wooden chair and is the furthest away from the bed.,the [chair] is wooden [chair] and is the furthest away from the [bed] ,"['chair', 'chair', 'bed']"
-The toilet paper dispenser.,the [toilet] paper dispenser ,['toilet']
-circle table,circle [table] ,['table']
-"When standing in the middle of the room facing the monitors, the correct one is on the far left. There are a bunch of pictures on the wall behind it.",when standing in the middle of the [room] facing the [monitors] the correct one is on the far left there are bunch of [pictures] on the [wall] behind [it] ,"['room', 'monitors', 'pictures', 'wall', 'it']"
-The correct chair has a white cushion and does NOT have a purple covering on it. It is against the wall.,the correct [chair] has white [cushion] and does not have purple covering on [it] it is against the [wall] ,"['chair', 'cushion', 'wall', 'it']"
-"looking at the sink, the paper towels on the left.",looking at the [sink] the [paper] [towels] on the left ,"['sink', 'paper towels']"
-The coffee maker is on the end of the shelf.,the [coffee] [maker] is on the [end] [of] the [shelf] ,"['coffee maker', 'end table', 'shelf']"
-The chair closest to the desk.,the [chair] closest to the [desk] ,"['chair', 'desk']"
-The red chair behind the oval table.,the red [chair] behind the oval [table] ,"['chair', 'table']"
-Look at the two end table sitting side by side.  You want the couch to the left.,look at the two [end] [table] sitting side by side you want the [couch] to the left ,"['end table', 'couch']"
-"Standing in the middle of the room looking at the windows, it's the monitor on the right side closest to the window.",standing in the middle of the [room] looking at the [windows] [it] the [monitor] on the right side closest to the [window] ,"['room', 'windows', 'monitor', 'window', 'it']"
-The stool underneath the table.,the [stool] underneath the [table] ,"['stool', 'table']"
-The curtains that are much darker,the [curtains] that are much darker ,['curtains']
-"the bottle on the left side of the sink, furthest from the fridge",the [bottle] on the left side of the [sink] furthest from the fridge ,"['bottle', 'sink']"
-These doors are farther from the large rectangular table.,these [doors] are farther from the large rectangular [table] ,"['doors', 'table']"
-choose the white board.,choose the white [board] ,['board']
-white table closest to the large area of seating.,white [table] closest to the large area of [seating] ,"['table', 'seating']"
-"You are looking at the largest row of cabinets, above the fridge.",you are looking at the largest row of [cabinets] above the fridge ,['cabinets']
-The printer closest to the open door.,the [printer] closest to the open [door] ,"['printer', 'door']"
-The toilet is the one with the seat flipped up.,the [toilet] is the one with the [seat] flipped up ,"['toilet', 'seat']"
-Locate the small box that sits on the windowsill.,locate the small [box] that sits on the [windowsill] ,"['box', 'windowsill']"
-"This is a narrow lower level cabinet, next to an appliance.",this is narrow lower level [cabinet] next to an appliance ,['cabinet']
-This tall vertical cabinet has 2 doors,this tall vertical [cabinet] has [doors] ,"['cabinet', 'doors']"
-The chair with the blue and grey backpack on it.,the [chair] with the blue and grey [backpack] on [it] ,"['chair', 'backpack', 'it']"
-The black bin is located below the desk (top bin) and near a round laundry hamper,the black [bin] is located below the desk top [bin] and near round [laundry] [hamper] ,"['bin', 'bin', 'laundry hamper']"
-"Facing the wall with three pictures, select the one on the right side.",facing the [wall] with three [pictures] select the one on the right side ,"['wall', 'pictures']"
-the trash under the sink counter furthest from the bed,the [trash] [under] the sink [counter] furthest from the [bed] ,"['trash bag', 'counter', 'bed']"
-"The door between the two sets of cabinets, furthest from the big yellow box.",the [door] between the two sets of [cabinets] furthest from the big yellow [box] ,"['door', 'cabinets', 'box']"
-From the door the shelf on the left side,from the [door] the [shelf] on the left side ,"['door', 'shelf']"
-Chair nearest to the bottom of the room.,[chair] nearest to the bottom of the [room] ,"['chair', 'room']"
-"If you are standing at the door, facing the windows, it is the radiator on the left.",if you are standing at the [door] facing the [windows] [it] is the [radiator] on the left ,"['door', 'windows', 'radiator', 'it']"
-the longest whiteboard,the longest [whiteboard] ,['whiteboard']
-Turn so you back is towards the large number twelve on the wall and it's the sofa chair ahead below the large clock.,turn so you back is towards the large number twelve on the [wall] and [it] the [sofa] [chair] ahead below the large [clock] ,"['wall', 'sofa chair', 'clock', 'it']"
-This chair is nearer the sofa and has a white pillow.,this [chair] is nearer the [sofa] and has white [pillow] ,"['chair', 'sofa', 'pillow']"
-the chair with the back on a wall,the [chair] with the back on [wall] ,"['chair', 'wall']"
-There is a trash can against the wall  in between the refrigerator and the sink.,there is [trash] [can] against the [wall] in between the [refrigerator] and the [sink] ,"['trash can', 'wall', 'refrigerator', 'sink']"
+org_utterance,colored_utterance,pred_objs_name,phrases,start_obj_name,end_obj_name,pred_relationship_word_per_phrase
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [door] on the [wall] that does not have all the portraits ,"['door', 'wall']",['on the '],['door'],['wall'],['on']
+the pipes above the washer and dryer and not to the side,the [pipes] above the washer and dryer and not to the side ,['pipes'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,looking in from the [door] the first [printer] on the left ,"['door', 'printer']",['the first printer '],['door'],['printer'],[None]
+The short trashcan that is closest to the door,on the [wall] with many [trash] [cans] [it] is the one closest to the [door] ,"['wall', 'trash cans', 'door', 'it']","['with many ', 'it ', 'the one closest to the door. ']","['wall', 'trash cans', 'it']","['trash cans', 'it', 'door']","[None, None, 'closest']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [cabinet] closest to the [couch] ,"['cabinet', 'couch']",['closest to the '],['cabinet'],['couch'],['closest']
+Choose the highest cabinets.,choose the highest [cabinets] ,['cabinets'],[],[],[],[]
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",[it] is the [coffee] [table] that is across from the [couch] with the two [pillows] and located next to the space between the sets of [armchairs] ,"['coffee table', 'couch', 'pillows', 'armchairs', 'it']","['is the ', 'that is across from the ', 'with the two ', 'and located next to the space between the sets of ']","['it', 'coffee table', 'couch', 'it']","['coffee table', 'couch', 'pillows', 'armchairs']","[None, 'across', None, 'between']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [desk] next to the red [shirt] ,"['desk', 'shirt']",['next to the red '],['desk'],['shirt'],['next']
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",you need to select the [lamp] that is on the [wall] above the brown [table] with [chairs] around [it] ,"['lamp', 'wall', 'table', 'chairs', 'it']","['that is on the ', 'above the brown ', 'with 4 ', 'around ']","['lamp', 'wall', 'table', 'chairs']","['wall', 'table', 'chairs', 'it']","['on', 'above', None, 'around']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the smaller of the two [windows] on the same [wall] ,"['windows', 'wall']",['on the same '],['windows'],['wall'],['on']
+The towel hanging draped over the side of the tub.,the single [bookshelf] by itself to the right of the [door] if you where looking at [it] ,"['bookshelf', 'door', 'it']","['by itself to the right of the ', 'if you where looking at ']","['bookshelf', 'door']","['door', 'it']","['right', 'at']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [monitor] under the [desk] ,"['monitor', 'desk']",['under the '],['monitor'],['desk'],['under']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [box] closest to the oriental [rug] ,"['box', 'rug']",['closest to the oriental '],['box'],['rug'],['closest']
+The towel hanging draped over the side of the tub.,the [table] is the shorter lighter one with the pulled out [chair] at [it] ,"['table', 'chair', 'it']","['is the shorter lighter one with the pulled out ', 'at ']","['table', 'chair']","['chair', 'it']","['out', 'at']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,facing the brown [cabinet] choose the [table] on the right ,"['cabinet', 'table']",['choose the table '],['cabinet'],['table'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[chair] nearest to the [window] ,"['chair', 'window']",['nearest to the '],['chair'],['window'],['nearest']
+The smallest of the two white heating vents.,the smallest of the two white heating [vents] ,['vents'],[],[],[],[]
+The short trashcan that is closest to the door,from the view of the [chairs] [it] the [couch] on the left with [pillows] on it ,"['chairs', 'couch', 'pillows', 'it']","[""it's "", 'couch on ', 'left with 2 pillows on ']","['chairs', 'it', 'couch']","['it', 'couch', 'pillows']","[None, 'on', 'left']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,if facing towards both of these [it] is the [window] on the left side ,"['window', 'it']",['the window '],['it'],['window'],[None]
+"The smallest plant on the window sill, closest to office chair",looking for black [chair] [its] under black [table] the [chair] is closest to the blue [wall] behind the [chair] are [book] [shelves] ,"['chair', 'table', 'chair', 'wall', 'chair', 'book shelves', 'its']","['its ', 'a black table. ', 'chair is ', 'to the blue wall, behind ', 'chair are book ', '']","['chair', 'its', 'table', 'chair', 'wall', 'chair']","['its', 'table', 'chair', 'wall', 'chair', 'book shelves']","[None, None, None, 'behind', None, None]"
+The towel hanging draped over the side of the tub.,the [desk] that is next to the [desk] with only one [monitor] ,"['desk', 'desk', 'monitor']","['that is next to the ', 'with only one ']","['desk', 'desk']","['desk', 'monitor']","['next', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [picture] above the [stairs] ,"['picture', 'stairs']",['above the '],['picture'],['stairs'],['above']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,choose the [trashcan] the is closest to the yellow caution [sign] ,"['trashcan', 'sign']",['the is closest to the yellow caution '],['trashcan'],['sign'],['closest']
+The towel hanging draped over the side of the tub.,when standing in the middle of the [room] facing the [bed] the correct [pillow] is on the left ,"['room', 'bed', 'pillow']","['facing the ', 'the correct ']","['room', 'bed']","['bed', 'pillow']","[None, None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [cabinet] at the end of the long [desk] ,"['cabinet', 'desk']",['at the end of the long '],['cabinet'],['desk'],['at']
+"looking at the three computer towers, pick the one on the left.",looking at the three [computer] [towers] pick the one on the left ,['computer towers'],[],[],[],[]
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",the correct [window] is closest to the [whiteboard] on the [wall] [it] is farthest from the [door] ,"['window', 'whiteboard', 'wall', 'door', 'it']","['is closest to the ', 'on the ', 'it ', 'farthest from the door. ']","['window', 'whiteboard', 'wall', 'it']","['whiteboard', 'wall', 'it', 'door']","['closest', 'on', None, 'farthest']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [trash] [can] nearest the large [copier] ,"['trash can', 'copier']",['nearest the large '],['trash can'],['copier'],['nearest']
+The right of the two printers,the right of the two [printers] ,['printers'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,choose all of the stuff on the [desk] behind the [couch] ,"['desk', 'couch']",['behind the '],['desk'],['couch'],['behind']
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",if you face the [wall] that has two [doors] in [it] you need to select the [door] on the left of those two [doors] ,"['wall', 'doors', 'door', 'doors', 'it']","['that has two ', 'in ', 'you need to select the ', 'on the left of those two ']","['wall', 'doors', 'it', 'door']","['doors', 'it', 'door', 'doors']","[None, None, None, 'on the left']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [cabinet] is the one above the [toilet] ,"['cabinet', 'toilet']",['is the one above the '],['cabinet'],['toilet'],['above']
+The towel hanging draped over the side of the tub.,the [window] that has [window] both to the right and left of [it] ,"['window', 'window', 'it']","['that has a ', 'both to the right and left of ']","['window', 'window']","['window', 'it']","[None, 'right']"
+The towel hanging draped over the side of the tub.,[it] is the [chair] farthest from the [refrigerator] ,"['chair', 'refrigerator', 'it']","['is the ', 'farthest from the ']","['it', 'chair']","['chair', 'refrigerator']","[None, 'farthest']"
+The towel hanging draped over the side of the tub.,[table] with white [chairs] next to the drawing pad in the middle of the [room] ,"['table', 'chairs', 'room']","['with 2 white ', 'next to the drawing pad(in the middle of the room) ']","['table', 'chairs']","['chairs', 'room']","[None, 'middle']"
+The towel hanging draped over the side of the tub.,[it] the [bottle] with the blue and white label on the sink [counter] ,"['bottle', 'counter', 'it']","['the bottle ', 'the blue and white label on the sink counter. ']","['it', 'it']","['bottle', 'counter']","[None, 'on']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,pick the [sink] on your right as you are looking out the [window] ,"['sink', 'window']",['on your right as you are looking out the '],['sink'],['window'],['right']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,choose the [desk] next to the [bunkbed] ,"['desk', 'bunkbed']",['next to the '],['desk'],['bunkbed'],['next']
+The towel hanging draped over the side of the tub.,[it] the small black [pillow] at the end of the [couch] ,"['pillow', 'couch', 'it']","['the small black pillow ', 'the end of the couch. ']","['it', 'pillow']","['pillow', 'couch']","[None, None]"
+The towel hanging draped over the side of the tub.,the [windows] are the ones to the the left of the [clock] in the middle of the [wall] ,"['windows', 'clock', 'wall']","['are the ones to the the left of the ', 'in the middle of the ']","['windows', 'clock']","['clock', 'wall']","['left', 'middle']"
+The towel hanging draped over the side of the tub.,if facing the [whiteboard] the tall [door] that is to the right of the [whiteboard] ,"['whiteboard', 'door', 'whiteboard']","['the tall door ', 'is to the right of the whiteboard. ']","['whiteboard', 'door']","['door', 'whiteboard']","[None, 'right']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [curtains] farthest from the [lamp] in the corner ,"['curtains', 'lamp']",['farthest from the '],['curtains'],['lamp'],['farthest']
+The short trashcan that is closest to the door,[it] is the [trash] [can] furthest from the [door] closest to the [desk] ,"['trash can', 'door', 'desk', 'it']","['is the ', 'furthest from the ', 'closest to the desk. ']","['it', 'trash can', 'door']","['trash can', 'door', 'desk']","[None, 'furthest', 'closest']"
+The towel hanging draped over the side of the tub.,the [radiator] you want to select is the one closest to the [whiteboard] on the [wall] ,"['radiator', 'whiteboard', 'wall']","['you want to select is the one closest to the ', 'on the ']","['radiator', 'whiteboard']","['whiteboard', 'wall']","['closest', 'on']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,choose the [keyboard] located on the smaller wooden [desk] ,"['keyboard', 'desk']",['located on the smaller wooden '],['keyboard'],['desk'],['on']
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",if you go to the center of the messy [room] you will find blue [chair] [it] sits in front of [table] containing [photo] of man face on it ,"['room', 'chair', 'table', 'photo', 'it']","['you will find a blue ', 'it ', 'in front of a table ', 'a photo ']","['room', 'chair', 'it', 'table']","['chair', 'it', 'table', 'photo']","[None, None, 'front', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the top [cabinet] above the [sink] ,"['cabinet', 'sink']",['above the '],['cabinet'],['sink'],['above']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,when standing in the [room] looking at the [coffee] [makers] the correct one is on the right ,"['room', 'coffee makers']",['looking at the '],['room'],['coffee makers'],['at']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the three seated [couch] to the left of the two seated [couch] ,"['couch', 'couch']",['the left of the two-seated couch. '],['couch'],['couch'],['left']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the tablet closest to the orange [chair] and red [footstool] ,"['footstool', 'chair']",['and red '],['chair'],['footstool'],[None]
+The towel hanging draped over the side of the tub.,four [chairs] are together pick the one under the [pictures] on the [wall] on the left side ,"['chairs', 'pictures', 'wall']","['are together, pick the one under the pictures ', 'the wall ']","['chairs', 'pictures']","['pictures', 'wall']","['together', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,when looking at the two [monitors] you are looking for the right hand side [monitor] ,"['monitors', 'monitor']",['you are looking for the right hand side monitor. '],['monitors'],['monitor'],['right']
+The short trashcan that is closest to the door,standing in the [bathtub] on the opposite end of the water nozzles is [towel] [bar] the white towel on the right side that is closest to the [window] ,"['bathtub', 'bar', 'towel', 'window']","['on the opposite end of the water nozzles is a towel ', '', 'white towel on the right side that is closest to the window ']","['bathtub', 'towel', 'bar']","['towel', 'bar', 'window']","['opposite', None, 'on the right']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,facing the [windows] the [bed] on the left ,"['windows', 'bed']",['the bed '],['windows'],['bed'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] in the corner of the [room] the left ,"['chair', 'room']",['in the corner of the '],['chair'],['room'],['corner']
+The towel hanging draped over the side of the tub.,the [rail] between the [toilet] and [sink] ,"['rail', 'toilet', 'sink']","['between the ', 'and ']","['rail', 'rail']","['toilet', 'sink']","['between', None]"
+The short trashcan that is closest to the door,this lightly colored [picture] is [hanging] above the [desk] with the [chair] ,"['picture', 'desk', 'chair', 'hanging']","['is ', 'above the ', 'with the ']","['picture', 'hanging', 'desk']","['hanging', 'desk', 'chair']","[None, 'above', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,am white [board] without the overhead [projector] ,"['board', 'projector']",['without the overhead '],['board'],['projector'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] closest to the [coffee] [table] ,"['chair', 'coffee table']",['closest to the '],['chair'],['coffee table'],['closest']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the green [box] is the [trash] [can] in the corner ,"['trash can', 'box']",['is the '],['box'],['trash can'],[None]
+The towel hanging draped over the side of the tub.,the [desk] farthest from the [bookshelves] and closest to the [whiteboard] ,"['desk', 'bookshelves', 'whiteboard']","['farthest from the ', 'and closest to the ']","['desk', 'desk']","['bookshelves', 'whiteboard']","['farthest', 'closest']"
+The short trashcan that is closest to the door,long thin piece of framed art looks like galaxy [hanging] over the [light] colored love [seat] against the [wall] ,"['seat', 'wall', 'hanging', 'light']","['light colored ', 'seat against ', 'wall ']","['hanging', 'light', 'seat']","['light', 'seat', 'wall']","[None, 'against', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [file] [cabinet] in between the computer [monitors] ,"['file cabinet', 'monitors']",['in between the computer '],['file cabinet'],['monitors'],['between']
+The smaller couch.,the smaller [couch] ,['couch'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[bookshelf] close to the empty computer [desk] ,"['bookshelf', 'desk']",['close to the empty computer '],['bookshelf'],['desk'],['close']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,choose the table [box] that is on the left side of [room] by itself ,"['box', 'room']",['that is on the left side of '],['box'],['room'],['on the left']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,between the [sink] and the [stove] ,"['sink', 'stove']",['and the '],['sink'],['stove'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[chair] is closest to the black handle of [cabinet] ,"['chair', 'cabinet']",['is closest to the black handle of '],['chair'],['cabinet'],['closest']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [desk] with the white [monitor] ,"['desk', 'monitor']",['with the white '],['desk'],['monitor'],[None]
+The smaller brown chair,the smaller brown [chair] ,['chair'],[],[],[],[]
+Choose the bench that is closest to the washers.,choose the [bench] that is closest to the washers ,['bench'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,if facing both [shoe] the [shoe] on your right closest to you ,"['shoe', 'shoe']",['the shoe '],['shoe'],['shoe'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the bottom left [picture] of the four [pictures] ,"['picture', 'pictures']",['of the four '],['picture'],['pictures'],[None]
+"From the two chairs that are close to each other, the one farthest from the kitchen.",from the two [chairs] that are close to each other the one farthest from the kitchen ,['chairs'],[],[],[],[]
+The towel hanging draped over the side of the tub.,the [trashcan] that is opposite from the [sinks] and between the two [paper] [towel] [dispensers] ,"['trashcan', 'sinks', 'paper towel dispensers']","['that is opposite from the ', 'and between the two ']","['trashcan', 'trashcan']","['sinks', 'paper towel dispensers']","['opposite', 'between']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the floor [lamp] not the lamp on the [dresser] ,"['lamp', 'dresser']","[""the lamp on the dresser.' ""]",['lamp'],['dresser'],['on']
+Of the two trash cans you should choose the one that is closest to the corner and furthest from the pile of office supplies.,of the two [trash] [cans] you should choose the one that is closest to the corner and furthest from the pile of office supplies ,['trash cans'],[],[],[],[]
+The towel hanging draped over the side of the tub.,select the [soap] [dish] above the [sink] nearest the [toilet] ,"['soap dish', 'sink', 'toilet']","['above the ', 'nearest the ']","['soap dish', 'sink']","['sink', 'toilet']","['above', 'nearest']"
+This one is touching the floor,this one is touching the [floor] ,['floor'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,this is the long set of [cabinets] mounted high on the [wall] ,"['cabinets', 'wall']",['mounted high on the '],['cabinets'],['wall'],['on']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [window] above the small [dresser] in the corner ,"['window', 'dresser']",['above the small '],['window'],['dresser'],['above']
+Nearest the two brown sofas,nearest the two brown [sofas] ,['sofas'],[],[],[],[]
+The towel hanging draped over the side of the tub.,on the [table] the top [box] that is against the [wall] ,"['table', 'box', 'wall']","['the top box ', 'is against the wall. ']","['table', 'box']","['box', 'wall']","[None, 'against']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [door] beside the wood [wall] lining ,"['door', 'wall']",['beside the wood '],['door'],['wall'],['beside']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the smaller [window] furthest from the [desk] ,"['window', 'desk']",['furthest from the '],['window'],['desk'],['furthest']
+The towel hanging draped over the side of the tub.,as you enter the [room] [it] is the [desk] in the back right corner ,"['room', 'desk', 'it']","['', 'is the ']","['room', 'it']","['it', 'desk']","[None, None]"
+The green box is the shortest in height.,the green [box] is the shortest in height ,['box'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,facing the [windows] the [chair] on the right ,"['windows', 'chair']",['the chair '],['windows'],['chair'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [box] you are looking for is above the lounge [chair] ,"['box', 'chair']",['you are looking for is above the lounge '],['box'],['chair'],['above']
+The towel hanging draped over the side of the tub.,the tan [trashcan] closer to the [desk] and [chair] ,"['desk', 'chair', 'trashcan']","['closer to the ', 'and ']","['trashcan', 'trashcan']","['desk', 'chair']","[None, None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,am the [trash] [can] in front of the white [door] ,"['trash can', 'door']",['in front of the white '],['trash can'],['door'],['front']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [couch] with the more smaller [pillows] ,"['couch', 'pillows']",['with the more smaller '],['couch'],['pillows'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] closest to the [whiteboard] ,"['chair', 'whiteboard']",['closest to the '],['chair'],['whiteboard'],['closest']
+The towel hanging draped over the side of the tub.,the [table] is the one with black [chair] pushed under [it] ,"['table', 'chair', 'it']","['is the one with a black ', 'pushed under ']","['table', 'chair']","['chair', 'it']","[None, 'under']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] to the right of the pink [coat] ,"['chair', 'coat']",['to the right of the pink '],['chair'],['coat'],['right']
+The towel hanging draped over the side of the tub.,this [chair] is not pulled up to [table] next to another [chair] ,"['chair', 'table', 'chair']","['is not pulled up to a ', 'next to another ']","['chair', 'table']","['table', 'chair']","['up', 'next']"
+The towel hanging draped over the side of the tub.,pick the [chair] that sits in the corner near the [round] [table] that is not near the wooden [door] ,"['chair', 'round table', 'door']","['that sits in the corner near the ', 'that is not near the wooden ']","['chair', 'round table']","['round table', 'door']","['corner', 'near']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the tall [plant] in the middle of the [room] ,"['plant', 'room']",['in the middle of the '],['plant'],['room'],['middle']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [whiteboard] behind the [chair] ,"['whiteboard', 'chair']",['behind the '],['whiteboard'],['chair'],['behind']
+The towel hanging draped over the side of the tub.,facing [wall] with [tables] this is the upper right of the [tables] forming square ,"['wall', 'tables', 'tables']","['with 3 ', 'this is the upper right of the 4 tables ']","['wall', 'tables']","['tables', 'tables']","[None, 'upper']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the smaller [window] that is behind the [desk] [lamp] ,"['window', 'desk lamp']",['that is behind the '],['window'],['desk lamp'],['behind']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] by itself away from the other [chairs] ,"['chair', 'chairs']",['by itself away from the other '],['chair'],['chairs'],['away']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [window] with the washing [basket] sitting infront ,"['window', 'basket']",['with the washing '],['window'],['basket'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[trash] [can] under the black [desk] ,"['trash can', 'desk']",['under the black '],['trash can'],['desk'],['under']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [backpack] close to the foot of the [bed] ,"['backpack', 'bed']",['close  to the foot of the '],['backpack'],['bed'],['close']
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",if you look closely one [chair] appears to have [person] sitting in [it] choose the empty [chair] with no [person] sitting in it ,"['chair', 'person', 'chair', 'person', 'it']","['to have a person ', 'in it. ', 'the empty chair with ', 'person sitting ']","['chair', 'person', 'it', 'chair']","['person', 'it', 'chair', 'person']","[None, None, None, None]"
+The short trashcan that is closest to the door,locate the [keyboard] that is at the computer with [poster] of an astronaut above [it] it is closest to the green [couch] ,"['keyboard', 'poster', 'couch', 'it']","['that is at the computer with a ', 'of an astronaut above ', 'it is closest to the green couch. ']","['keyboard', 'poster', 'it']","['poster', 'it', 'couch']","['at', 'above', 'closest']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,looking at the [wall] the [chair] on the left ,"['wall', 'chair']",['the chair '],['wall'],['chair'],[None]
+The short trashcan that is closest to the door,[it] is the [trash] [can] between the [desk] and the open [door] ,"['trash can', 'desk', 'door', 'it']","['is the ', 'between the ', 'and the open ']","['it', 'trash can', 'it']","['trash can', 'desk', 'door']","[None, 'between', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,you want the [computer] [tower] that is under the [desk] ,"['computer tower', 'desk']",['that is under the '],['computer tower'],['desk'],['under']
+The towel hanging draped over the side of the tub.,the [laptop] is to the left of the [tv] and is positioned between two [windows] ,"['laptop', 'tv', 'windows']","['is to the left of the ', 'and is positioned between two ']","['laptop', 'laptop']","['tv', 'windows']","['left', 'between']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [table] closest to the [lamp] ,"['table', 'lamp']",['closest to the '],['table'],['lamp'],['closest']
+"facing the bed, nightstand on the right",facing the bed [nightstand] on the right ,['nightstand'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the larger [door] on the left of the open [door] ,"['door', 'door']",['on the left of the open '],['door'],['door'],['on the left']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,looking at the big long [table] pick the small [table] on the furthest right ,"['table', 'table']",['pick the small table '],['table'],['table'],[None]
+This is the much larger rectangular cabinet.,this is the much larger rectangular [cabinet] ,['cabinet'],[],[],[],[]
+The towel hanging draped over the side of the tub.,the [cabinet] in between the [refrigerator] and [oven] ,"['cabinet', 'refrigerator', 'oven']","['in between the ', 'and ']","['cabinet', 'cabinet']","['refrigerator', 'oven']","['between', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[window] that does not have the large white fridge in front of [it] ,"['window', 'it']",['that does not have the large white fridge in front of '],['window'],['it'],['front']
+The towel hanging draped over the side of the tub.,this [trashcan] is next to another one and on [its] other side is black [cabinet] ,"['trashcan', 'cabinet', 'its']","['is next to another one, and on its ', 'side is a black cabinet. ']","['trashcan', 'its']","['its', 'cabinet']","['next', 'side']"
+The towel hanging draped over the side of the tub.,the correct [chair] is closest to the [door] and [bin] with blue lid ,"['chair', 'door', 'bin']","['is closest to the ', 'and ']","['chair', 'chair']","['door', 'bin']","['closest', None]"
+The towel hanging draped over the side of the tub.,the [coffee] [maker] is directly left of the [sink] if you were standing in front of [it] looks more like carafe than the others do ,"['coffee maker', 'sink', 'it']","['is directly left of the ', 'if you were standing in front of ']","['coffee maker', 'coffee maker']","['sink', 'it']","['left', 'front']"
+The towel hanging draped over the side of the tub.,[stand] between the two pink [chairs] and you want the [couch] directly opposite you ,"['stand', 'chairs', 'couch']","['between the two pink ', 'and you want the ']","['stand', 'stand']","['chairs', 'couch']","['between', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[curtain] at the doorway next to the [chairs] ,"['curtain', 'chairs']",['at the doorway next to the '],['curtain'],['chairs'],['next']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [lamp] next to the [couch] ,"['lamp', 'couch']",['next to the '],['lamp'],['couch'],['next']
+The towel hanging draped over the side of the tub.,find the [towels] on one [wall] [it] the middle one ,"['towels', 'wall', 'it']","['on one ', ""it's ""]","['towels', 'wall']","['wall', 'it']","['on', None]"
+The towel hanging draped over the side of the tub.,facing the [bed] [it] the striped [pillow] on the left in the front ,"['bed', 'pillow', 'it']","[""it's "", 'striped pillow on ']","['bed', 'it']","['it', 'pillow']","[None, 'on']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the larger [box] that is more in the center of the [room] ,"['box', 'room']",['that is more in the center of the '],['box'],['room'],['center']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [desk] is the closest on the left when looking at the yellow [wall] ,"['desk', 'wall']",['is  the closest on the left when looking at the yellow '],['desk'],['wall'],['on the left']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] facing diagonally away from the other [chairs] ,"['chair', 'chairs']",['facing diagonally away from the other '],['chair'],['chairs'],['away']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] closer to the [couch] ,"['chair', 'couch']",['closer to the '],['chair'],['couch'],[None]
+The table that is bare.,the [table] that is bare ,['table'],[],[],[],[]
+the trash can next to the chalkboard,the [trash] [can] next to the chalkboard ,['trash can'],[],[],[],[]
+the smaller of the two desks,the smaller of the two [desks] ,['desks'],[],[],[],[]
+choose the bigger trash can.,choose the bigger [trash] [can] ,['trash can'],[],[],[],[]
+Computer tower in the middle of the other two,[computer] [tower] in the middle of the other two ,['computer tower'],[],[],[],[]
+The towel hanging draped over the side of the tub.,[keyboard] close to the [window] [its] tilted sideways ,"['keyboard', 'window', 'its']","['close to the ', 'its ']","['keyboard', 'window']","['window', 'its']","['close', None]"
+Two stacked white boxes. You want the one on the bottom.,two stacked white [boxes] you want the one on the bottom ,['boxes'],[],[],[],[]
+The towel hanging draped over the side of the tub.,the [chair] underneath the [paintings] on the [wall] ,"['chair', 'paintings', 'wall']","['underneath the 2 ', 'on the ']","['chair', 'paintings']","['paintings', 'wall']","['underneath', 'on']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,this [trash] [can] is nearer to the [desk] ,"['trash can', 'desk']",['is nearer to the '],['trash can'],['desk'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,if you are looking at the computer [screens] this [mouse] will be on the farthest right ,"['screens', 'mouse']",['this mouse '],['screens'],['mouse'],[None]
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",look for the white [printers] in the [room] is on top of [desk] on in between two [desks] and on on the ground next to the waste [baskets] ,"['printers', 'room', 'desk', 'desks', 'baskets']","['in the ', '1 is on top of a ', 'on in between two ', 'and on on the ground next to the waste ']","['printers', 'room', 'desk', 'printers']","['room', 'desk', 'desks', 'baskets']","[None, 'on', 'between', 'next']"
+The towel hanging draped over the side of the tub.,the [keyboard] that is closer to the large [whiteboard] on the [wall] ,"['keyboard', 'whiteboard', 'wall']","['that is closer to the large ', 'on the ']","['keyboard', 'whiteboard']","['whiteboard', 'wall']","[None, 'on']"
+the top of the two stacked pillow,the top of the two stacked [pillow] ,['pillow'],[],[],[],[]
+Brown and very comfortable sitting in the middle of room.,brown and very comfortable sitting in the middle of [room] ,['room'],[],[],[],[]
+The towel hanging draped over the side of the tub.,from the [door] [its] the [trash] [can] on the left ,"['door', 'trash can', 'its']","['', 'the ']","['door', 'its']","['its', 'trash can']","[None, None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the small [desk] that is tucked up next to the curved [desk] ,"['desk', 'desk']",['that is tucked up next to the curved '],['desk'],['desk'],['next']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,facing the [windows] the [desk] on the right ,"['windows', 'desk']",['the desk '],['windows'],['desk'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the smaller [table] under the [picture] ,"['table', 'picture']",['under the '],['table'],['picture'],['under']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,there is brown [arm] [chair] directly in front of this [door] ,"['arm chair', 'door']",['directly in front of this '],['arm chair'],['door'],['front']
+The towel hanging draped over the side of the tub.,choose the [keyboard] on the left of the [table] with three [monitors] ,"['keyboard', 'table', 'monitors']","['on the left of the ', 'with three ']","['keyboard', 'table']","['table', 'monitors']","['on the left', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [backpack] near the brown [desk] ,"['backpack', 'desk']",['near the brown '],['backpack'],['desk'],['near']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [curtains] to the right of the [bed] ,"['curtains', 'bed']",['to the right of the '],['curtains'],['bed'],['right']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] farthest from the [monitors] ,"['chair', 'monitors']",['farthest from the '],['chair'],['monitors'],['farthest']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,this [window] is next to the [bed] with blue sheets ,"['window', 'bed']",['is next to the '],['window'],['bed'],['next']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,navigate towards the [desk] with more than one [monitor] on and please select the one on the right ,"['desk', 'monitor']",['with more than one '],['desk'],['monitor'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [whiteboard] closest to the [book] [shelf] in the corner ,"['whiteboard', 'book shelf']",['closest to the '],['whiteboard'],['book shelf'],['closest']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the long [cabinet] on the [wall] with cubbyholes ,"['cabinet', 'wall']",['on the '],['cabinet'],['wall'],['on']
+The short trashcan that is closest to the door,there is [cardboard] on this [chair] and black [cardboard] under [it] ,"['cardboard', 'chair', 'cardboard', 'it']","['on this ', 'and black ', 'under ']","['cardboard', 'cardboard', 'cardboard']","['chair', 'cardboard', 'it']","['on', None, 'under']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,black [pillow] in the corner of the [couch] ,"['pillow', 'couch']",['in the corner of the '],['pillow'],['couch'],['corner']
+The towel hanging draped over the side of the tub.,the beige [table] directly behind the [chair] at the end of the conference [table] ,"['table', 'chair', 'table']","['directly behind the ', 'at the end of the conference ']","['table', 'chair']","['chair', 'table']","['behind', 'at']"
+The towel hanging draped over the side of the tub.,choose the [chair] with the blue [backpack] on [it] ,"['chair', 'backpack', 'it']","['with the blue ', 'on ']","['chair', 'backpack']","['backpack', 'it']","[None, 'on']"
+The towel hanging draped over the side of the tub.,the [shelf] next to the [bed] and closest to the [window] ,"['shelf', 'bed', 'window']","['next to the ', 'and closest to the ']","['shelf', 'shelf']","['bed', 'window']","['next', 'closest']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[monitor] to the right when facing the [tables] ,"['monitor', 'tables']",['to the right when facing the '],['monitor'],['tables'],['right']
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",facing [wall] with [pictures] [it] the [stool] 2nd from right along that [wall] ,"['wall', 'pictures', 'stool', 'wall', 'it']","['with 2 ', ""it's "", 'stool 2nd ', 'right along that wall. ']","['wall', 'pictures', 'it', 'stool']","['pictures', 'it', 'stool', 'wall']","[None, None, None, 'along']"
+The short trashcan that is closest to the door,the green [box] is slightly shorter than the taller [trash] [can] red [box] on the left of [it] ,"['trash can', 'box', 'box', 'it']","['is slightly shorter than the taller ', 'red ', 'on the left of ']","['box', 'trash can', 'box']","['trash can', 'box', 'it']","[None, None, 'on the left']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,closed brown [door] in the corner next to white [door] ,"['door', 'door']",['in the corner next to a white '],['door'],['door'],['corner']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,pick the white [box] that is on [table] ,"['table', 'box']",['that is on a '],['box'],['table'],['on']
+The short trashcan that is closest to the door,[it] the [door] on the [wall] with only [cans] one being red ,"['door', 'wall', 'cans', 'it']","['the door ', 'the wall ', 'only 3 cans, ']","['it', 'door', 'wall']","['door', 'wall', 'cans']","[None, None, None]"
+The towel hanging draped over the side of the tub.,the [plant] at the far left hand corner of the [window] [sill] as you are facing the [window] ,"['plant', 'window sill', 'window']","['at the far left hand corner of the ', 'as you are facing the ']","['plant', 'window sill']","['window sill', 'window']","['corner', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,choose the [chair] that is farthest away from the [window] ,"['chair', 'window']",['that is farthest away from the '],['chair'],['window'],['farthest']
+The short trashcan that is closest to the door,the correct [file] [cabinet] has [box] with red on top of [it] the [file] [cabinet] is dark tan or gray ,"['file cabinet', 'file cabinet', 'box', 'it']","['has a ', 'with a red x on top of ', 'the file ']","['file cabinet', 'box', 'it']","['box', 'it', 'file cabinet']","[None, 'on', None]"
+The short trashcan that is closest to the door,[it] is the [trash] [can] under the [desk] and next to the potted [plant] ,"['trash can', 'desk', 'plant', 'it']","['is the ', 'under the ', 'and next to the potted ']","['it', 'trash can', 'it']","['trash can', 'desk', 'plant']","[None, 'under', 'next']"
+The towel hanging draped over the side of the tub.,the [couch] closest to the [water] [bottle] that on top of the wooden [cabinet] ,"['couch', 'water bottle', 'cabinet']","['closest to the ', ""that's on top of the wooden cabinet ""]","['couch', 'water bottle']","['water bottle', 'cabinet']","['closest', 'on']"
+The short trashcan that is closest to the door,on the orange [couch] the [pillow] on the [seat] that extends into the middle of the [room] ,"['couch', 'pillow', 'seat', 'room']","['the pillow ', 'the seat ', 'extends into the middle of the room. ']","['couch', 'pillow', 'seat']","['pillow', 'seat', 'room']","[None, None, 'middle']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,this [plant] is on [desk] by some bright blue rectangles ,"['plant', 'desk']",['is on a '],['plant'],['desk'],['on']
+The towel hanging draped over the side of the tub.,the brown [box] on the [floor] near the tan [shelf] ,"['box', 'floor', 'shelf']","['on the ', 'near the tan ']","['box', 'floor']","['floor', 'shelf']","['on', 'near']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,facing the [window] the [can] on the right ,"['window', 'can']",['the can '],['window'],['can'],[None]
+The towel hanging draped over the side of the tub.,when looking at the [couch] [its] the [window] on the right ,"['couch', 'window', 'its']","['', 'the ']","['couch', 'its']","['its', 'window']","[None, None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [keyboard] closest to the blue [door] ,"['keyboard', 'door']",['closest to the blue '],['keyboard'],['door'],['closest']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [picture] that is hung highest on the [wall] ,"['picture', 'wall']",['that is hung highest on the '],['picture'],['wall'],['on']
+The towel hanging draped over the side of the tub.,the [desk] that doesnt have [bag] on [it] ,"['desk', 'bag', 'it']","['that doesnt have a ', 'on ']","['desk', 'bag']","['bag', 'it']","[None, 'on']"
+The towel hanging draped over the side of the tub.,[plant] growing from [container] that is standing on small [chair] ,"['plant', 'container', 'chair']","['growing from a ', 'that is standing on a small ']","['plant', 'plant']","['container', 'chair']","[None, 'on']"
+The short trashcan that is closest to the door,[it] is the [door] across from the [vending] [machine] next to the [trash] [can] ,"['door', 'vending machine', 'trash can', 'it']","['is the ', 'across from the ', 'next to the trash ']","['it', 'door', 'vending machine']","['door', 'vending machine', 'trash can']","[None, 'across', 'next']"
+"The tall, vertical box in the corner.",the tall vertical [box] in the corner ,['box'],[],[],[],[]
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",facing the [monitor] on the [desk] [it] the [cabinets] to the left directly below the [window] ,"['monitor', 'desk', 'cabinets', 'window', 'it']","['on the ', ""it's "", 'cabinets to ', 'left, directly below the window. ']","['monitor', 'desk', 'it', 'cabinets']","['desk', 'it', 'cabinets', 'window']","['on', None, None, 'below']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the green [box] is the [chair] in the middle of the space ,"['chair', 'box']",['is the '],['box'],['chair'],[None]
+The towel hanging draped over the side of the tub.,if facing the [window] select the [keyboard] that is sitting on the [desk] on your left ,"['window', 'keyboard', 'desk']","['select the keyboard ', 'is sitting on the desk ']","['window', 'keyboard']","['keyboard', 'desk']","[None, 'on']"
+The towel hanging draped over the side of the tub.,[box] to the left of [bed] when looking at [bed] from the foot ,"['box', 'bed', 'bed']","['to the left of ', 'when looking at ']","['box', 'bed']","['bed', 'bed']","['left', 'at']"
+Toilet that is furthest in the corner.,[toilet] that is furthest in the corner ,['toilet'],[],[],[],[]
+The shorter cabinet.,the shorter [cabinet] ,['cabinet'],[],[],[],[]
+This box is on top of the other one.,this [box] is on top of the other one ,['box'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,this [door] is at the end of the long [wall] of dryers ,"['door', 'wall']",['is at the end of the long '],['door'],['wall'],['at']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,facing the [doors] the [bed] on the right ,"['doors', 'bed']",['the '],['doors'],['bed'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the bottom [box] at the foot of the grey [bed] ,"['box', 'bed']",['at the foot of the grey '],['box'],['bed'],['at']
+The short trashcan that is closest to the door,standing in the middle of the [room] looking at the line of [chairs] [it] the [chair] on the far left ,"['room', 'chairs', 'chair', 'it']","['looking at the line of ', ""it's "", 'chair on ']","['room', 'chairs', 'it']","['chairs', 'it', 'chair']","['at', None, 'on']"
+The towel hanging draped over the side of the tub.,the correct [table] does not have anything on top of [it] it is farthest from the double [doors] ,"['table', 'doors', 'it']","['does not have anything on top of ', 'it is farthest from the double doors. ']","['table', 'it']","['it', 'doors']","['on', 'farthest']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [table] closest to the [closet] [door] ,"['table', 'closet door']",['closest to the '],['table'],['closet door'],['closest']
+The towel hanging draped over the side of the tub.,the [binders] on the tallest [shelf] in the [room] ,"['binders', 'shelf', 'room']","['on the tallest ', 'in the ']","['binders', 'shelf']","['shelf', 'room']","['on', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [keyboard] pressed up against [monitor] ,"['keyboard', 'monitor']",['pressed up against a '],['keyboard'],['monitor'],['against']
+The towel hanging draped over the side of the tub.,the [chair] that has white [papers] in front of [it] ,"['chair', 'papers', 'it']","['that has white ', 'in front of ']","['chair', 'papers']","['papers', 'it']","[None, 'front']"
+The short trashcan that is closest to the door,facing the [beds] looking at the [pictures] [it] the [picture] on the far right ,"['beds', 'pictures', 'picture', 'it']","['looking at the ', ""it's "", 'picture on ']","['beds', 'pictures', 'it']","['pictures', 'it', 'picture']","['at', None, 'on']"
+The towel hanging draped over the side of the tub.,[table] with no red [chair] in front of [it] ,"['table', 'chair', 'it']","['with no red ', 'in front of ']","['table', 'chair']","['chair', 'it']","[None, 'front']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,looking at the two [tables] am on the left and closer than the other [chairs] ,"['tables', 'chairs']",['i am on the left and closer than the other 2 '],['tables'],['chairs'],['on the left']
+The small picture with a pink flower,the small [picture] with pink flower ,['picture'],[],[],[],[]
+The box to the left hand side of the door as you are facing it,go to the [table] near the white [cabinets] on the [wall] and printing [machine] find [monitor] on top of the [table] ,"['table', 'cabinets', 'wall', 'machine', 'monitor', 'table']","['near the white ', 'on the ', 'and a printing ', 'find a monitor ', 'top of the table. ']","['table', 'cabinets', 'table', 'machine', 'monitor']","['cabinets', 'wall', 'machine', 'monitor', 'table']","['near', 'on', None, None, None]"
+select the lamp on your right if the two are at the top of the image,select the [lamp] on your right if the two are at the top of the image ,['lamp'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the brown [desk] by the [door] ,"['desk', 'door']",['by the '],['desk'],['door'],['by']
+The towel hanging draped over the side of the tub.,the framed [picture] on the [dresser] under the art on the [wall] ,"['picture', 'dresser', 'wall']","['on the ', 'under the art on the ']","['picture', 'dresser']","['dresser', 'wall']","['on', 'under']"
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",the short [bookshelf] on the [wall] opposite of the black [couch] [it] is next to the two tall [bookshelves] ,"['bookshelf', 'wall', 'couch', 'bookshelves', 'it']","['on the ', 'opposite of the black ', 'it ', 'next to the two tall bookshelves. ']","['bookshelf', 'wall', 'couch', 'it']","['wall', 'couch', 'it', 'bookshelves']","['on', 'opposite', None, 'next']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,choose the [bin] closest to the [door] ,"['bin', 'door']",['closest to the '],['bin'],['door'],['closest']
+The cabinet over the fridge,the [cabinet] over the fridge ,['cabinet'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,facing the [window] the [arm] [chair] on the right ,"['window', 'arm chair']",['the arm '],['window'],['arm chair'],[None]
+The larger desk with a curve,the larger [desk] with curve ,['desk'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [chair] directly in front of the [monitor] ,"['chair', 'monitor']",['directly in front of the '],['chair'],['monitor'],['front']
+the monitor is the white one,the [monitor] is the white one ,['monitor'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,facing washer or dryer [it] the upper left double [cabinet] ,"['cabinet', 'it']",['double cabinet. '],['it'],['cabinet'],[None]
+if looking at the group of 4 cabinets the second one from left.,if looking at the group of [cabinets] the second one from left ,['cabinets'],[],[],[],[]
+The towel hanging draped over the side of the tub.,the [chair] in the corner of the [room] furthest from the three [chairs] huddled close to each other ,"['chair', 'room', 'chairs']","['in the corner of the ', 'furthest from the three chairs ']","['chair', 'room']","['room', 'chairs']","['corner', 'furthest']"
+The box to the left hand side of the door as you are facing it,facing the kitchen [sink] and focusing on the side of the [table] that is nearest the kitchen sink the [chair] on the right the [chair] with the yellow [backpack] on [it] ,"['sink', 'table', 'chair', 'chair', 'backpack', 'it']","['and focusing on the side of the ', 'that is nearest the kitchen sink, the chair ', 'the right, the chair with ', 'yellow backpack on ', '']","['sink', 'table', 'chair', 'chair', 'backpack']","['table', 'chair', 'chair', 'backpack', 'it']","['side', 'nearest', 'right', 'on', None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [closet] to the right when you walk in through the [door] ,"['closet', 'door']",['to the right when you walk in through the '],['closet'],['door'],['through']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,this is the lower [soap] [dish] inside the [shower] ,"['soap dish', 'shower']",['inside the '],['soap dish'],['shower'],['inside']
+The short trashcan that is closest to the door,the [curtain] next to the [globe] on the [table] in front of [it] ,"['curtain', 'globe', 'table', 'it']","['next to the ', 'on the ', 'in  front of ']","['curtain', 'globe', 'table']","['globe', 'table', 'it']","['next', 'on', 'front']"
+"facing recliner, left curtains",facing recliner left [curtains] ,['curtains'],[],[],[],[]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,these [books] are sitting right on top of the the [shelves] in the corner ,"['books', 'shelf']",['are sitting right on top of the the '],['books'],['shelf'],['right']
+The towel hanging draped over the side of the tub.,[it] the [backpack] next to the [bed] ,"['backpack', 'bed', 'it']","['the backpack ', 'to the bed. ']","['it', 'backpack']","['backpack', 'bed']","[None, None]"
+"The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV",[monitor] with the [laptop] next to [it] next to the [monitor] with the red [folder] next to it ,"['monitor', 'laptop', 'monitor', 'folder', 'it']","[' with the ', 'next to ', 'next to the monitor ', 'the red folder ']","['monitor', 'laptop', 'it', 'monitor']","['laptop', 'it', 'monitor', 'folder']","[None, 'next', 'next', None]"
+The cabinet next to the open cabinet on the side of the room with the refrigerator,face your [camera] towards the [windows] in the [room] the [monitor] you want is the one that is not closer to the [window] on the left side of the [room] [it] is facing pair of desk [chairs] ,"['camera', 'windows', 'room', 'monitor', 'window', 'room', 'chairs', 'it']","['towards the ', 'in the ', ' the monitor ', 'want is the one that is not closer to the window, ', 'the left side of the room.  ', 'is facing ', 'pair of desk chairs. ']","['camera', 'windows', 'room', 'monitor', 'window', 'room', 'it']","['windows', 'room', 'monitor', 'window', 'room', 'it', 'chairs']","[None, None, None, None, 'side', None, None]"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the open [door] next to the [trash] [cans] leading to the outside ,"['door', 'trash cans']",['next to the '],['door'],['trash cans'],['next']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [shelf] is next to the [cabinets] in the kitchen ,"['shelf', 'cabinets']",['is next to the '],['shelf'],['cabinets'],['next']
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[couch] closest to the [tv] ,"['couch', 'tv']",['closest to the '],['couch'],['tv'],['closest']
+The towel hanging draped over the side of the tub.,the [monitor] is under the colorful pie chart on the [wall] and to the right of the [printer] ,"['monitor', 'wall', 'printer']","['is under the colorful pie chart on the ', 'and to the right of the ']","['monitor', 'monitor']","['wall', 'printer']","['under', 'right']"
+The towel hanging draped over the side of the tub.,[it] is the [window] parallel to the oblong side of the [table] ,"['window', 'table', 'it']","['is the ', 'parallel to the oblong side of the ']","['it', 'window']","['window', 'table']","[None, 'side']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,[it] is the [bed] under the big swirly pink art ,"['bed', 'it']",['is the '],['it'],['bed'],[None]
+The short trashcan that is closest to the door,choose the [chair] that has stuff sitting on [it] it is in front of either [door] or [windows] cant tell ,"['chair', 'door', 'windows', 'it']","['that has stuff sitting on ', 'it is in front of either a door ', 'windows ']","['chair', 'it', 'door']","['it', 'door', 'windows']","['on', 'front', None]"
+The towel hanging draped over the side of the tub.,the [curtains] closest to the [pool] [table] not beside the [piano] ,"['curtains', 'pool table', 'piano']","['closest to the ', 'not beside the piano ']","['curtains', 'pool table']","['pool table', 'piano']","['closest', 'beside']"
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,please select the [file] [cabinet] to the left of the grey cabinet ,"['file cabinet', 'cabinet']",[''],['file cabinet'],['cabinet'],[None]
+The plant at the far right hand side of the bookcase tucked in the furthest corner of the desk,the [window] above the [bed] ,"['window', 'bed']",['above the '],['window'],['bed'],['above']
+The fourth chair from your left,the fourth [chair] from your left ,['chair'],[],[],[],[]
+The short trashcan that is closest to the door,there are four lighting fixtures and you want the [lamp] [hanging] from the [wall] on the left of the [curtains] ,"['lamp', 'wall', 'curtains', 'hanging']","['', 'the wall ', 'the left of the curtains. ']","['lamp', 'hanging', 'wall']","['hanging', 'wall', 'curtains']","[None, None, 'left']"
+The towel hanging draped over the side of the tub.,walk through the archway [door] into smaller space and this [picture] is next to rectangular [door] ,"['door', 'picture', 'door']","['into a smaller space, and this picture ', 'next to a rectangular door. ']","['door', 'picture']","['picture', 'door']","['into', 'next']"

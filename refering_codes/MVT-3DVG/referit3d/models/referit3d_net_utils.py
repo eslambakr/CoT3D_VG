@@ -135,7 +135,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
 
     extras = None
     if args.anchors != 'none':
-        extras += ['anchors_pos']
+        extras = ['anchors_pos']
 
     if args.predict_lang_anchors:
         if type(extras) == list:

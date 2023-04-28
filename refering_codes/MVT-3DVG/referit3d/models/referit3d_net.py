@@ -125,8 +125,8 @@ class ReferIt3DNet_transformer(nn.Module):
                 self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                     nn.ReLU(), nn.Dropout(self.dropout_rate))
                 self.object_language_clf_parallel = nn.Linear(self.inner_dim, self.max_num_anchors+1)
-                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512,
-                                                                                                activation="gelu"), num_layers=4)
+                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=16, dim_feedforward=512,
+                                                                                                activation="gelu"), num_layers=1)
                 self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                         nn.ReLU(), nn.Dropout(self.dropout_rate),
                                                         nn.Linear(self.inner_dim, self.max_num_anchors+1))
@@ -134,8 +134,8 @@ class ReferIt3DNet_transformer(nn.Module):
                 self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                     nn.ReLU(), nn.Dropout(self.dropout_rate))
                 self.object_language_clf_parallel = nn.Linear(self.inner_dim, 1)
-                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512,
-                                                                                                activation="gelu"), num_layers=4)
+                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=16, dim_feedforward=512,
+                                                                                                activation="gelu"), num_layers=1)
                 self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                         nn.ReLU(), nn.Dropout(self.dropout_rate),
                                                         nn.Linear(self.inner_dim, 1))

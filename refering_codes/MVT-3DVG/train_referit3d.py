@@ -54,7 +54,8 @@ if __name__ == '__main__':
     # Parse arguments
     args = parse_arguments()
     # Read the scan related information
-    all_scans_in_dict, scans_split, class_to_idx = load_scan_related_data(args.scannet_file, add_no_obj=args.predict_lang_anchors)
+    all_scans_in_dict, scans_split, class_to_idx = load_scan_related_data(args.scannet_file,
+                                                                           add_no_obj=args.anchors != 'none' or args.predict_lang_anchors)
     # Read the linguistic data of ReferIt3D
     referit_data = load_referential_data(args, args.referit3D_file, scans_split)
     # Prepare data & compute auxiliary meta-information.
@@ -121,14 +122,6 @@ if __name__ == '__main__':
         if not args.label_lang_sup:
             param_list.append({'params': model.obj_clf.parameters(), 'lr': args.init_lr})
         if args.anchors == 'cot':
-            """
-            param_list.append({'params': model.anchors_embedding.parameters(), 'lr': args.init_lr})
-            param_list.append({'params': model.object_language_clf_anchors.parameters(), 'lr': args.init_lr})
-            param_list.append({'params': model.fc_out.parameters(), 'lr': args.init_lr})
-            param_list.append({'params': model.dummy_fc.parameters(), 'lr': args.init_lr})
-            param_list.append({'params': model.head_final.parameters(), 'lr': args.init_lr})
-            param_list.append({'params': model.trans_tgt.parameters(), 'lr': args.init_lr})
-            """
             param_list.append({'params': model.parallel_embedding.parameters(), 'lr': args.init_lr})
             param_list.append({'params': model.object_language_clf_parallel.parameters(), 'lr': args.init_lr})
             param_list.append({'params': model.fc_out.parameters(), 'lr': args.init_lr})

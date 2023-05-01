@@ -77,7 +77,8 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         batch['lang_tokens'] = lang_tokens
 
         # Forward pass
-        LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS = model(batch, epoch)
+        LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS = model(batch, epoch)
+        LOSS = LOSS_target[0]
         LOSS = LOSS.mean()
 
         res = {}
@@ -90,7 +91,8 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         optimizer.step()
 
         # Update the loss and accuracy meters
-        target = batch['target_pos']
+        # target = batch['target_pos']
+        target = LOSS_target[1]
         batch_size = target.size(0)  # B x N_Objects
         total_loss_mtr.update(LOSS.item(), batch_size)
 
@@ -115,7 +117,7 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
 
 
 @torch.no_grad()
-def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, randomize=False, tokenizer=None):
+def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, randomize=False, tokenizer=None, epoch=None):
     # TODO post-deadline, can we replace this func with the train + a 'phase==eval' parameter?
     metrics = dict()  # holding the losses/accuracies
     total_loss_mtr = AverageMeter()
@@ -165,7 +167,8 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         batch['lang_tokens'] = lang_tokens
 
         # Forward pass
-        LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS = model(batch)
+        LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS = model(batch, epoch)
+        LOSS = LOSS_target[0]
         LOSS = LOSS.mean()
         res = {}
         res['logits'] = LOGITS
@@ -173,7 +176,8 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         res['lang_logits'] = LANG_LOGITS
 
         # Update the loss and accuracy meters
-        target = batch['target_pos']
+        #target = batch['target_pos']
+        target = LOSS_target[1]
         batch_size = target.size(0)  # B x N_Objects
         total_loss_mtr.update(LOSS.item(), batch_size)
 

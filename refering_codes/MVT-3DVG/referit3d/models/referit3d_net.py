@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from collections import defaultdict
 import numpy as np
 from . import DGCNN
-from .utils import get_siamese_features, my_get_siamese_features
+from .utils import get_siamese_features, my_get_siamese_features, find_matching_indices, vector_gather
 from ..in_out.vocabulary import Vocabulary
 import math
 
@@ -21,31 +21,6 @@ from referit3d.models.CoT.seq_seq_transformer import CoTTransformer
 from referit3d.models.CoT.lstm_w_att import DecoderWithAttention
 import time
 
-import einops
-import torch
-
-def vector_gather(vectors, indices):
-    """
-    Gathers (batched) vectors according to indices.
-    Arguments:
-        vectors: Tensor[N, L, D]
-        indices: Tensor[N, K] or Tensor[N]
-    Returns:
-        Tensor[N, K, D] or Tensor[N, D]
-    """
-    N, L, D = vectors.shape
-    squeeze = False
-    if indices.ndim == 1:
-        squeeze = True
-        indices = indices.unsqueeze(-1)
-    N2, K = indices.shape
-    assert N == N2
-    indices = einops.repeat(indices, "N K -> N K D", D=D)
-    out = torch.gather(vectors, dim=1, index=indices)
-    if squeeze:
-        out = out.squeeze(1)
-    return out
-
 
 class ReferIt3DNet_transformer(nn.Module):
 
@@ -53,7 +28,8 @@ class ReferIt3DNet_transformer(nn.Module):
                  args,
                  n_obj_classes,
                  class_name_tokens,
-                 ignore_index):
+                 ignore_index,
+                 class_to_idx):
 
         super().__init__()
 
@@ -79,6 +55,10 @@ class ReferIt3DNet_transformer(nn.Module):
         self.anchors_mode = args.anchors
         self.cot_type = args.cot_type
         self.predict_lang_anchors = args.predict_lang_anchors
+        self.lang_filter_objs = args.lang_filter_objs
+        self.class_to_idx = class_to_idx
+        self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
+        self.cls_names = np.array(list(self.idx_to_class.values()))
 
         # TODO:Eslam: make this one generic for Nr3D
         if self.anchors_mode == "cot":
@@ -94,7 +74,7 @@ class ReferIt3DNet_transformer(nn.Module):
         # TODO:Eslam: make this one generic for Nr3D
         if self.predict_lang_anchors:
             self.lang_out = 3 
-            self.n_obj_classes = n_obj_classes + 2
+            self.n_obj_classes = n_obj_classes + 1
         else:
             self.lang_out = 1
             self.n_obj_classes = n_obj_classes
@@ -125,7 +105,7 @@ class ReferIt3DNet_transformer(nn.Module):
                 self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                     nn.ReLU(), nn.Dropout(self.dropout_rate))
                 self.object_language_clf_parallel = nn.Linear(self.inner_dim, self.max_num_anchors+1)
-                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=16, dim_feedforward=512,
+                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512,
                                                                                                 activation="gelu"), num_layers=1)
                 self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                         nn.ReLU(), nn.Dropout(self.dropout_rate),
@@ -134,7 +114,7 @@ class ReferIt3DNet_transformer(nn.Module):
                 self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                     nn.ReLU(), nn.Dropout(self.dropout_rate))
                 self.object_language_clf_parallel = nn.Linear(self.inner_dim, 1)
-                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=16, dim_feedforward=512,
+                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=8, dim_feedforward=512,
                                                                                                 activation="gelu"), num_layers=1)
                 self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                         nn.ReLU(), nn.Dropout(self.dropout_rate),
@@ -213,11 +193,31 @@ class ReferIt3DNet_transformer(nn.Module):
             # TODO: Eslam: Fix anchors issue by making it independent on anchors order.
             # TODO: Eslam: make it generic instead of ignore last anchor
             trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)  # [N, 2]
-            trg_pass = trg_pass.reshape(-1)  # [N*trg_seq_length]
-            LOGITS_reshaped = LOGITS.reshape(-1, LOGITS.shape[2])  # [N*trg_seq_length, num_cls]
-            referential_loss = self.logit_loss(LOGITS_reshaped, trg_pass)
-            if AUX_LOGITS != None:
-                referential_loss += self.logit_loss_aux(AUX_LOGITS.reshape(-1, AUX_LOGITS.shape[2]), trg_pass)
+            if self.lang_filter_objs_activated and (self.matched_indices is not None):
+                #print("trg_pass[:, 0] = ", trg_pass[:, 0])
+                #print("self.matched_indices = ", self.matched_indices.shape)
+                #print("self.matched_indices = ", self.matched_indices)
+                new_anchors_indices, max_matched_anchor_len = find_matching_indices(trg_pass[:, 0], self.matched_indices, self.device)
+                #print("new_anchors_indices = ", new_anchors_indices)
+                if max_matched_anchor_len:
+                    new_tgt_indices, max_matched_tgt_len = find_matching_indices(trg_pass[:, 1], self.matched_indices, self.device)
+                    #print("new_tgt_indices = ", new_tgt_indices)
+                
+                if max_matched_anchor_len and max_matched_tgt_len:
+                    trg_pass = torch.cat((new_anchors_indices, new_tgt_indices), -1)
+                    #print("new_tgt_indices = ", new_tgt_indices.shape)
+                    #print("new_tgt_indices = ", new_tgt_indices)
+                else:
+                    trg_pass = None
+            
+            if trg_pass is None:
+                referential_loss = 0
+            else:
+                trg_pass_reshaped = trg_pass.reshape(-1)  # [N*trg_seq_length]
+                LOGITS_reshaped = LOGITS.reshape(-1, LOGITS.shape[2])  # [N*trg_seq_length, num_cls]
+                referential_loss = self.logit_loss(LOGITS_reshaped, trg_pass_reshaped)
+                if AUX_LOGITS != None:
+                    referential_loss += self.logit_loss_aux(AUX_LOGITS.reshape(-1, AUX_LOGITS.shape[2]), trg_pass_reshaped)
         else:
             referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
@@ -228,12 +228,22 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             lang_clf_loss = self.lang_logits_loss(LANG_LOGITS, batch['target_class'])
         total_loss = referential_loss + self.obj_cls_alpha * obj_clf_loss + self.lang_cls_alpha * lang_clf_loss
-        return total_loss
+        
+        if trg_pass is None:
+            return (total_loss, batch['target_pos'])
+        else:
+            return (total_loss, trg_pass[:, -1])
+        
 
     def forward(self, batch: dict, epoch=None):
         # batch['class_labels']: GT class of each obj
         # batch['target_class']：GT class of target obj
         # batch['target_pos']: GT id
+
+        if (epoch > 10) and self.lang_filter_objs:
+            self.lang_filter_objs_activated = True
+        else:
+            self.lang_filter_objs_activated = False
 
         self.device = self.obj_feature_mapping[0].weight.device
 
@@ -284,12 +294,32 @@ class ReferIt3DNet_transformer(nn.Module):
             agg_feats = refer_feat.max(dim=1).values
         # print("agg_feats: ", agg_feats.shape)  # [128, 52, 768]
 
+        if self.lang_filter_objs_activated:
+            # Get lang predictions:
+            pred_lang_objs_idx = torch.argmax(LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, 3), dim=1)  # [B, 607, 3] --> [B, 3]
+            pred_lang_objs_names = self.cls_names[pred_lang_objs_idx.reshape(-1).cpu().numpy()]  # [B*(anchors_length+1)]
+            pred_lang_objs_names = pred_lang_objs_names.reshape(-1,3)  # [B*(anchors_length+1)] -->   # [B, (anchors_length+1)]
+            # Get cls predictions:
+            pred_vis_objs_idx = torch.argmax(CLASS_LOGITS, dim=-1)  # [B, 52, 608] --> [B, 52]
+            pred_vis_objs_names = self.cls_names[pred_vis_objs_idx.reshape(-1).cpu().numpy()]  # [B*52]
+            pred_vis_objs_names = np.array([s.replace('no_obj', 'dummy_class') for s in pred_vis_objs_names])
+            pred_vis_objs_names = pred_vis_objs_names.reshape(-1,N)  # [B*52] --> [B, 52]
+            #print("pred_lang_objs_names = ", pred_lang_objs_names[0])
+            #print("pred_vis_objs_names = ", pred_vis_objs_names[0])
+            # Find matched indices:
+            self.matched_indices, max_matched_obj_len = find_matching_indices(pred_lang_objs_names, pred_vis_objs_names, self.device)
+            if self.matched_indices is not None:
+                #print("self.matched_indices = ", self.matched_indices.shape)
+                agg_feats = vector_gather(agg_feats, self.matched_indices)  # [B, num_cls, E] --> [B, anchors_length+1, E]
+            
+            #print("agg_feats = ", agg_feats.shape)
+            #print("max_matched_obj_len = ", max_matched_obj_len)
+            
         if self.anchors_mode == "cot":
             if self.cot_type == "cross":
                 parallel_embd = self.parallel_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]
                 AUX_LOGITS = self.object_language_clf_parallel(parallel_embd)  # [N, num_cls, E] --> [N, num_cls, anchors_length+1]
                 AUX_LOGITS = AUX_LOGITS.permute(0, 2, 1)  # [N, num_cls, anchors_length+1] --> [N, anchors_length+1, num_cls]
-                #trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)  # [N, anchors_length+1]
                 trg_pass = torch.argmax(AUX_LOGITS, dim=-1)  # [N, trg_seq_length]
                 sampled_embd = vector_gather(parallel_embd, trg_pass)  # [N, num_cls, E] --> [N, anchors_length+1, E]
                 cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), sampled_embd.permute(1, 0, 2)).permute(1, 0, 2)  # [N, anchors_length+1, E]

@@ -5,7 +5,7 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_sr3d_org/keep_all_points_with_global_scan_alignment/keep_all_points_with_global_scan_alignment.pkl \
     -referit3D-file /home/abdelrem/3d_codes/scannet_dataset/scannet/sr3d.csv \
     --bert-pretrain-path /home/abdelrem/3d_codes/MVT-3DVG/weights/bert-base-uncased/ \
-    --log-dir logs/MVT_sr3d_bs24_cot_causal_1layer_16head_langAnchors \
+    --log-dir logs/MVT_sr3d_bs24_cot_cross_1layer_16head_langAnchors_visAug \
     --n-workers 16 \
     --model 'referIt3DNet_transformer' \
     --unit-sphere-norm True \
@@ -19,5 +19,6 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     --label-lang-sup True \
     --anchors "cot" \
     --max-test-objects 52 \
-    --cot_type "causal" \
-    --predict_lang_anchors True
+    --cot_type "cross" \
+    --predict_lang_anchors True \
+    --lang_filter_objs False

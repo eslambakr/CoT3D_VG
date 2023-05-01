@@ -86,7 +86,7 @@ if __name__ == '__main__':
     gpu_num = len(args.gpu.strip(',').split(','))
 
     if args.model == 'referIt3DNet_transformer':
-        model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx)
+        model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx, class_to_idx=class_to_idx)
     else:
         assert False
 
@@ -182,7 +182,7 @@ if __name__ == '__main__':
                 # Evaluate:
                 tic = time.time()
                 test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args,
-                                                  tokenizer=tokenizer)
+                                                  tokenizer=tokenizer, epoch=epoch)
                 toc = time.time()
                 timings['test'] = (toc - tic) / 60
 

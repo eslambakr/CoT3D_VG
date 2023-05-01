@@ -68,6 +68,7 @@ def parse_arguments(notebook_options=None):
                         help='cross:  transformer decoder will refine all inputs based even on the future predections\
                               causal: transformer decoder will refine inputs based on causal manner(only previous predictions)')
     parser.add_argument('--predict_lang_anchors', type=str2bool, default=False)
+    parser.add_argument('--lang_filter_objs', type=str2bool, default=False)
 
     #
     # Model arguments

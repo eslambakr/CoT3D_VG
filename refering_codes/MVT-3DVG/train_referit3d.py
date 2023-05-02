@@ -50,9 +50,12 @@ def log_train_test_information():
 
 
 if __name__ == '__main__':
-    
+    import pdb; pdb.set_trace()
     # Parse arguments
     args = parse_arguments()
+    args.scannet_file = "/home/mohama0e/CoT3D_VG/refering_codes/MVT-3DVG/pre_processed_scannet/keep_all_points_00_view_with_global_scan_alignment/keep_all_points_00_view_with_global_scan_alignment.pkl"
+    args.referit3D_file = "/home/mohama0e/CoT3D_VG/automatic_loc_module/data/nr3d.csv"
+    args.log_dir = "/home/mohama0e/CoT3D_VG/refering_codes/MVT-3DVG/logs"
     # Read the scan related information
     all_scans_in_dict, scans_split, class_to_idx = load_scan_related_data(args.scannet_file)
     # Read the linguistic data of ReferIt3D

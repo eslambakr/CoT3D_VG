@@ -68,7 +68,7 @@ def load_referential_data(args, referit_csv, scans_split):
         print('Dropping utterances without explicit '
               'mention to the target class {}->{}'.format(n_original, len(referit_data)))
 
-    referit_data = referit_data[['tokens', 'instance_type', 'scan_id', 'anchors_types', 'anchor_ids',
+    referit_data = referit_data[['tokens', 'instance_type', 'scan_id',# 'anchors_types', 'anchor_ids',
                                  'dataset', 'target_id', 'utterance', 'stimulus_id']]
     referit_data.tokens = referit_data['tokens'].apply(literal_eval)
 

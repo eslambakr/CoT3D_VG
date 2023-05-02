@@ -48,7 +48,10 @@ if __name__ == '__main__':
         tag += '_no_global_scan_alignment'
 
     # Read all scan files.
+    args.top_scan_dir = "/home/mohama0e/CoT3D_VG/refering_codes/MVT-3DVG/scannet/scans"
+    args.top_save_dir = "/home/mohama0e/CoT3D_VG/refering_codes/MVT-3DVG/pre_processed_scannet"
     all_scan_ids = [osp.basename(i) for i in immediate_subdirectories(args.top_scan_dir)]
+    
     print('{} scans found.'.format(len(all_scan_ids)))
 
     kept_scan_ids = []
@@ -84,6 +87,8 @@ if __name__ == '__main__':
 
     start_time = time.time()
     n_items = len(all_scan_ids)
+    n_processes = 1
+    print('n_items: {}, n_processes: {}'.format(n_items, n_processes))
     if args.n_processes == -1:
         n_processes = min(mp.cpu_count(), n_items)
 

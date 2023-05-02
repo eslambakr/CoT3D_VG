@@ -121,8 +121,8 @@ def parse_arguments(notebook_options=None):
     else:
         args = parser.parse_args()
 
-    if not args.resume_path and not args.log_dir:
-        raise ValueError
+    # if not args.resume_path and not args.log_dir:
+    #     raise ValueError
 
     if args.config_file is not None:
         with open(args.config_file, 'r') as fin:

@@ -103,7 +103,7 @@ def instance_labels_of_context(context, max_context_size, label_to_idx=None, add
     if add_padding:
         n_pad = max_context_size - len(context)
         ori_instance_labels.extend(['pad'] * n_pad)
-
+    import pdb; pdb.set_trace()
     if label_to_idx is not None:
         instance_labels = np.array([label_to_idx[x] for x in ori_instance_labels])
 

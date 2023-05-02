@@ -136,3 +136,15 @@ dmypy.json
 .vscode/
 *.pem
 *.pyc
+
+#_data
+_data/
+
+#parser
+Parser/
+
+#Analysis for GT
+analyzing_gt_data/
+
+.conda/
+./vscode/

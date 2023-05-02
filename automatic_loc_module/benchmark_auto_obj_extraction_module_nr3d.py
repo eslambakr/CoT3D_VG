@@ -75,5 +75,7 @@ if __name__ == '__main__':
     print("Number of _00 items are: ", unique_counter)
 
     # Save the predicted objects in CSV file for manual verification:
-    pred_objs_name_all_scenes = random.sample(pred_objs_name_all_scenes, 240)
+    save_in_csv(lst=pred_objs_name_all_scenes, saving_name="./data/pred_objs_for_manual_verification_.csv")
+
+    pred_objs_name_all_scenes = random.sample(pred_objs_name_all_scenes, 3000)
     save_in_csv(lst=pred_objs_name_all_scenes, saving_name="./data/pred_objs_for_manual_verification.csv")

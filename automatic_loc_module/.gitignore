@@ -147,4 +147,4 @@ Parser/
 analyzing_gt_data/
 
 .conda/
-./vscode/
+.vscode/

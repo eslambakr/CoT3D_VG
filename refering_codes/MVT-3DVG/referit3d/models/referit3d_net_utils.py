@@ -44,6 +44,7 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
     obj_loss_mtr = AverageMeter()
     ref_acc_mtr = AverageMeter()
     cls_acc_mtr = AverageMeter()
+    cls_target_acc_mtr = AverageMeter()
     txt_acc_mtr = AverageMeter()
 
     # Set the model in training mode
@@ -104,6 +105,11 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
             cls_b_acc, _ = cls_pred_stats(res['class_logits'], batch['class_labels'], ignore_label=pad_idx)
             cls_acc_mtr.update(cls_b_acc, batch_size)
 
+            # Eslam: Measure the classification Accuracy for the target only
+            cls_target_b_acc, _ = cls_target_pred_stats(res['class_logits'], batch['class_labels'],
+                                                        batch['target_pos'],  ignore_label=pad_idx)
+            cls_target_acc_mtr.update(cls_target_b_acc, batch_size)
+
         if args.lang_cls_alpha > 0:
             batch_guess = torch.argmax(res['lang_logits'], -1)
             cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
@@ -112,6 +118,7 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
     metrics['train_total_loss'] = total_loss_mtr.avg
     metrics['train_referential_acc'] = ref_acc_mtr.avg
     metrics['train_object_cls_acc'] = cls_acc_mtr.avg
+    metrics['train_target_cls_acc'] = cls_target_acc_mtr.avg
     metrics['train_txt_cls_acc'] = txt_acc_mtr.avg
     return metrics
 
@@ -125,6 +132,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
     obj_loss_mtr = AverageMeter()
     ref_acc_mtr = AverageMeter()
     cls_acc_mtr = AverageMeter()
+    cls_target_acc_mtr = AverageMeter()
     txt_acc_mtr = AverageMeter()
 
     # Set the model in training mode
@@ -189,6 +197,11 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
             cls_b_acc, _ = cls_pred_stats(res['class_logits'], batch['class_labels'], ignore_label=pad_idx)
             cls_acc_mtr.update(cls_b_acc, batch_size)
 
+            # Eslam: Measure the classification Accuracy for the target only
+            cls_target_b_acc, _ = cls_target_pred_stats(res['class_logits'], batch['class_labels'],
+                                                        batch['target_pos'],  ignore_label=pad_idx)
+            cls_target_acc_mtr.update(cls_target_b_acc, batch_size)
+
         if args.lang_cls_alpha > 0:
             batch_guess = torch.argmax(res['lang_logits'], -1)
             cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
@@ -197,6 +210,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
     metrics['test_total_loss'] = total_loss_mtr.avg
     metrics['test_referential_acc'] = ref_acc_mtr.avg
     metrics['test_object_cls_acc'] = cls_acc_mtr.avg
+    metrics['test_target_cls_acc'] = cls_target_acc_mtr.avg
     metrics['test_txt_cls_acc'] = txt_acc_mtr.avg
     return metrics
 
@@ -357,6 +371,29 @@ def cls_pred_stats(logits, gt_labels, ignore_label):
 
     predictions = predictions[valid_indices]
     gt_labels = gt_labels[valid_indices]
+
+    correct_guessed = gt_labels == predictions
+    assert (type(correct_guessed) == torch.Tensor)
+
+    found_samples = gt_labels[correct_guessed]
+    # missed_samples = gt_labels[torch.logical_not(correct_guessed)] # TODO  - why?
+    mean_accuracy = torch.mean(correct_guessed.double()).item()
+    return mean_accuracy, found_samples
+
+
+@torch.no_grad()
+def cls_target_pred_stats(logits, gt_labels, indices, ignore_label):
+    """ Get the prediction statistics: accuracy, correctly/wrongly predicted test examples
+    :param logits: The output of the model (predictions) of size: B x N_Objects x N_Classes
+    :param gt_labels: The ground truth labels of size: B x N_Objects
+    :param ignore_label: The label of the padding class (to be ignored)
+    :return: The mean accuracy and lists of correct and wrong predictions
+    """
+    predictions = logits.argmax(dim=-1)  # B x N_Objects x N_Classes --> B x N_Objects
+
+    # filter the GT and the prediction based on the target location:
+    predictions = torch.gather(predictions, 1, indices.view(-1,1))
+    gt_labels = torch.gather(gt_labels, 1, indices.view(-1,1))
 
     correct_guessed = gt_labels == predictions
     assert (type(correct_guessed) == torch.Tensor)

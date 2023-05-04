@@ -1,5 +1,6 @@
 import warnings
 import numpy as np
+import random
 import multiprocessing as mp
 from torch.utils.data import DataLoader
 
@@ -141,3 +142,10 @@ def mean_rgb_unit_norm_transform(segmented_objects, mean_rgb, unit_norm, epsilon
         segmented_objects[:, :, :3] = xyz
 
     return segmented_objects
+
+
+def flipcoin(percent=50):
+    """
+    return Treu or False based on the given percentage.
+    """
+    return random.randrange(100) < percent

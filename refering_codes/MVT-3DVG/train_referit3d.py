@@ -10,12 +10,13 @@ import torch.nn as nn
 from torch import optim
 from termcolor import colored
 
+from referit3d.utils.tf_visualizer import Visualizer  # should be imported first (https://github.com/pytorch/pytorch/issues/30651)
 from referit3d.in_out.arguments import parse_arguments
 from referit3d.in_out.neural_net_oriented import load_scan_related_data, load_referential_data
 from referit3d.in_out.neural_net_oriented import compute_auxiliary_data, trim_scans_per_referit3d_data
 from referit3d.in_out.pt_datasets.listening_dataset import make_data_loaders
 from referit3d.utils import set_gpu_to_zero_position, create_logger, seed_training_code
-from referit3d.utils.tf_visualizer import Visualizer
+
 from referit3d.models.referit3d_net import ReferIt3DNet_transformer
 from referit3d.models.referit3d_net_utils import single_epoch_train, evaluate_on_dataset
 from referit3d.models.utils import load_state_dicts, save_state_dicts
@@ -40,6 +41,7 @@ def log_train_test_information():
 
         if args.obj_cls_alpha > 0:
             info += ', Object-Clf-Acc: {:.4f}'.format(meters[phase + '_object_cls_acc'])
+            info += ', Target-Clf-Acc: {:.4f}'.format(meters[phase + '_target_cls_acc'])
 
         if args.lang_cls_alpha > 0:
             info += ', Text-Clf-Acc: {:.4f}'.format(meters[phase + '_txt_cls_acc'])
@@ -50,7 +52,7 @@ def log_train_test_information():
 
 
 if __name__ == '__main__':
-
+    print("I am here")
     # Parse arguments
     args = parse_arguments()
     # Read the scan related information

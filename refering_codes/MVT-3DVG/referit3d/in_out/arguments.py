@@ -69,6 +69,11 @@ def parse_arguments(notebook_options=None):
                               causal: transformer decoder will refine inputs based on causal manner(only previous predictions)')
     parser.add_argument('--predict_lang_anchors', type=str2bool, default=False)
     parser.add_argument('--lang_filter_objs', type=str2bool, default=False)
+    parser.add_argument('--visaug_shuffle_mode', type=str, default="none", 
+                        help="Should be something from this set [none, scannet, 3DCoMPaT]")
+    parser.add_argument('--visaug_extracted_obj_path', type=str, default="", 
+                        help="the path of hdf5 file which contains the extracted objects from scannet or 3DCoMPaT to be used in augmentation.")
+    parser.add_argument('--visaug_pc_augment', type=str2bool, default=False)
 
     #
     # Model arguments

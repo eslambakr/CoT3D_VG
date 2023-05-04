@@ -156,3 +156,9 @@ if __name__ == '__main__':
                                                                  np.array(pred_vis_objs_names), device)
     print(" ---- matched_indices: ", matched_indices)
     print(" ----", max_matched_obj_len)
+
+    indices = torch.Tensor([2, 1]).long()  # [B,]
+    arr = torch.Tensor([[5, 9, 20, 22, 23], [1, 2, 3, 4, 5]])  # [B, 5]
+    # Use `gather` function to select items from each row of the 2D tensor using the indices
+    result = torch.gather(arr, 1, indices.view(-1,1))
+    print(" ---- new_anchors_indices: ", result)

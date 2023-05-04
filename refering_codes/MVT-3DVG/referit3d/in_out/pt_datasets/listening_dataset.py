@@ -1,13 +1,17 @@
 import numpy as np
+import h5py
+import os
+import torch
+import torchvision.transforms as T
 from torch.utils.data import Dataset
 from functools import partial
-from copy import deepcopy
 from .utils import dataset_to_dataloader, max_io_workers
+from .pc_transforms import ChromaticTranslation, RandomSymmetry, RandomNoise, Random3AxisRotation
 
 # the following will be shared on other datasets too if not, they should become part of the ListeningDataset
 # maybe make SegmentedScanDataset with only static functions and then inherit.
 from .utils import check_segmented_object_order, sample_scan_object, pad_samples, objects_bboxes
-from .utils import instance_labels_of_context, mean_rgb_unit_norm_transform
+from .utils import instance_labels_of_context, mean_rgb_unit_norm_transform, flipcoin
 from ...data_generation.nr3d import decode_stimulus_string
 from transformers import DistilBertTokenizer, DistilBertModel
 from ..three_d_object import ThreeDObject
@@ -15,8 +19,9 @@ from ..three_d_object import ThreeDObject
 
 class ListeningDataset(Dataset):
     def __init__(self, references, scans, vocab, max_seq_len, points_per_object, max_distractors,
-                 class_to_idx=None, object_transformation=None,
-                 visualization=False, anchors_mode="cot", max_anchors=2, predict_lang_anchors=False):
+                 class_to_idx=None, object_transformation=None, visualization=False,
+                 anchors_mode="cot", max_anchors=2, predict_lang_anchors=False, 
+                 shuffle_objects=None, pc_transforms=None):
 
         self.references = references
         self.scans = scans
@@ -29,6 +34,8 @@ class ListeningDataset(Dataset):
         self.object_transformation = object_transformation
         self.anchors_mode = anchors_mode
         self.predict_lang_anchors = predict_lang_anchors
+        self.shuffle_objects = shuffle_objects
+        self.pc_transforms = pc_transforms
         # TODO: Eslam make it generic for both Sr3D and Nr3D
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
             self.max_anchors = max_anchors
@@ -127,11 +134,9 @@ class ListeningDataset(Dataset):
             # Add anchors in 'context' list
             anchors_pos = poses[1:]
             for anchor_i, anchor in enumerate(anchors):
-                # context.insert(anchors_pos[anchor_i], deepcopy(anchor))
                 context.insert(anchors_pos[anchor_i], anchor)
             # pad with dummy anchor which will be replaced by zeros later.
             for anchor_i in range(len(anchors), self.max_anchors):
-                # context.insert(anchors_pos[anchor_i], deepcopy(anchors[0]))
                 context.insert(anchors_pos[anchor_i], ThreeDObject(anchor.scan, anchor.object_id, anchor.points, anchor.instance_label))
                 context[anchors_pos[anchor_i]].instance_label = 'no_obj'
         else:
@@ -140,8 +145,35 @@ class ListeningDataset(Dataset):
             anchors_pos = None
             context.insert(target_pos, target)
 
+        res['class_labels'] = instance_labels_of_context(context, self.max_context_size, self.class_to_idx)
         # sample point/color for them
-        samples = np.array([sample_scan_object(o, self.points_per_object) for o in context])
+        context_len = len(context)
+        if (self.shuffle_objects is not None) and (flipcoin(percent=80)):  # Shuffling objects optionally
+            # Iterate over object labels
+            samples = []
+            for k, object_label in enumerate(res['class_labels'][:context_len]):
+                class_key = 'objects_class_%d' % object_label
+                # sample a random pointcloud
+                # from the same object class
+                if class_key in self.shuffle_objects:
+                    n_objects = len(self.shuffle_objects[class_key])
+                if class_key not in self.shuffle_objects or n_objects == 0:
+                    samples += [sample_scan_object(context[k], self.points_per_object)]
+                    continue
+                rnd_index = np.random.randint(n_objects)
+                sampled_obj = self.shuffle_objects[class_key][rnd_index]
+                assert sampled_obj.shape == (2048, 6)
+                # Downsample pointcloud to points_per_object if needed
+                if sampled_obj.shape[0] > self.points_per_object:
+                    sampled_obj = sampled_obj[np.random.choice(sampled_obj.shape[0],
+                                                               self.points_per_object,
+                                                               replace=False), :]
+                samples += [sampled_obj]
+            samples = np.array(samples)
+        else:
+            samples = np.array([sample_scan_object(o, self.points_per_object) for o in context])
+
+        assert samples.shape == (context_len, self.points_per_object, 6)
 
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
             # pad with non-existing anchor
@@ -150,7 +182,6 @@ class ListeningDataset(Dataset):
 
         # mark their classes
         # res['ori_labels'],
-        res['class_labels'] = instance_labels_of_context(context, self.max_context_size, self.class_to_idx)
         res['scan_id'] = scan_id
         box_info = np.zeros((self.max_context_size, 4))
         box_info[:len(context),0] = [o.get_bbox().cx for o in context]
@@ -169,6 +200,11 @@ class ListeningDataset(Dataset):
             samples = self.object_transformation(samples)
 
         res['context_size'] = len(samples)
+
+        if (self.pc_transforms is not None) and (flipcoin(percent=50)):
+            for sample in samples:
+                sample = torch.from_numpy(sample)
+                sample = self.pc_transforms(sample)
 
         # take care of padding, so that a batch has same number of N-objects across scans.
         res['objects'] = pad_samples(samples, self.max_context_size)
@@ -214,7 +250,10 @@ class ListeningDataset(Dataset):
         return res
 
 
-def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb):
+def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, transform_obj=True):
+    shuffle_mode = args.visaug_shuffle_mode
+    pc_augment = args.visaug_pc_augment
+    assert shuffle_mode in ["none", "scannet", "3DCoMPaT"]
     n_workers = args.n_workers
     if n_workers == -1:
         n_workers = max_io_workers()
@@ -223,8 +262,19 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb):
     is_train = referit_data['is_train']
     splits = ['train', 'test']
 
-    object_transformation = partial(mean_rgb_unit_norm_transform, mean_rgb=mean_rgb,
-                                    unit_norm=args.unit_sphere_norm)
+    pc_transforms = None
+    if pc_augment:
+        pc_transforms = T.Compose([
+            RandomSymmetry(p=0.05),
+            RandomNoise(sigma=0.01, clip=0.05, p=0.05),
+            Random3AxisRotation(rot_x=30, rot_y=30, rot_z=30, p=0.05),
+            ChromaticTranslation(p=0.05),
+        ])
+
+    object_transformation = None
+    if transform_obj:
+        object_transformation = partial(mean_rgb_unit_norm_transform, mean_rgb=mean_rgb,
+                                        unit_norm=args.unit_sphere_norm)
 
     for split in splits:
         mask = is_train if split == 'train' else ~is_train
@@ -250,6 +300,11 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb):
 
             assert np.sum(~d_set.apply(multiple_targets_utterance, axis=1)) == 0
 
+        shuffle_source = None
+        if shuffle_mode != "none" and split == "train":
+            hdf5_file = os.path.join(args.visaug_extracted_obj_path, '%s.hdf5' % shuffle_mode)
+            shuffle_source = h5py.File(hdf5_file, 'r')
+
         dataset = ListeningDataset(references=d_set,
                                    scans=scans,
                                    vocab=vocab,
@@ -260,7 +315,9 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb):
                                    object_transformation=object_transformation,
                                    visualization=args.mode == 'evaluate',
                                    anchors_mode=args.anchors,
-                                   predict_lang_anchors=args.predict_lang_anchors)
+                                   predict_lang_anchors=args.predict_lang_anchors,
+                                   shuffle_objects=shuffle_source,
+                                   pc_transforms=pc_transforms)
 
         seed = None
         if split == 'test':

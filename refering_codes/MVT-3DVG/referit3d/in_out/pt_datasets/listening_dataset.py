@@ -148,7 +148,7 @@ class ListeningDataset(Dataset):
         res['class_labels'] = instance_labels_of_context(context, self.max_context_size, self.class_to_idx)
         # sample point/color for them
         context_len = len(context)
-        if (self.shuffle_objects is not None) and (flipcoin(percent=80)):  # Shuffling objects optionally
+        if (self.shuffle_objects is not None) and (flipcoin(percent=100)):  # Shuffling objects optionally
             # Iterate over object labels
             samples = []
             for k, object_label in enumerate(res['class_labels'][:context_len]):
@@ -201,7 +201,7 @@ class ListeningDataset(Dataset):
 
         res['context_size'] = len(samples)
 
-        if (self.pc_transforms is not None) and (flipcoin(percent=50)):
+        if (self.pc_transforms is not None) and (flipcoin(percent=5)):
             for sample in samples:
                 sample = torch.from_numpy(sample)
                 sample = self.pc_transforms(sample)
@@ -267,7 +267,7 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
         pc_transforms = T.Compose([
             RandomSymmetry(p=0.05),
             RandomNoise(sigma=0.01, clip=0.05, p=0.05),
-            Random3AxisRotation(rot_x=30, rot_y=30, rot_z=30, p=0.05),
+            Random3AxisRotation(rot_x=5, rot_y=5, rot_z=5, p=0.05),
             ChromaticTranslation(p=0.05),
         ])
 
@@ -279,6 +279,8 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
     for split in splits:
         mask = is_train if split == 'train' else ~is_train
         d_set = referit_data[mask]
+        if split == 'train':
+            d_set = d_set.sample(frac=args.train_data_percent)
         d_set.reset_index(drop=True, inplace=True)
 
         max_distractors = args.max_distractors if split == 'train' else args.max_test_objects - 1

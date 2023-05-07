@@ -74,6 +74,8 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--visaug_extracted_obj_path', type=str, default="", 
                         help="the path of hdf5 file which contains the extracted objects from scannet or 3DCoMPaT to be used in augmentation.")
     parser.add_argument('--visaug_pc_augment', type=str2bool, default=False)
+    parser.add_argument('--train_data_percent', type=float, default=1.0, 
+                        help="sample from the training data given this ratio, for data effeciency expirements.")
 
     #
     # Model arguments

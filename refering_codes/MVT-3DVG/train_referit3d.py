@@ -52,7 +52,6 @@ def log_train_test_information():
 
 
 if __name__ == '__main__':
-    print("I am here")
     # Parse arguments
     args = parse_arguments()
     # Read the scan related information

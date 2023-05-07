@@ -45,7 +45,8 @@ if __name__ == '__main__':
                 pred_objs_name_all_scenes.append({"org_utterance": df.utterance[i].lower(),
                                                 "pred_obj_name_1": objects_relation_pred[0],
                                                 "relation"        : objects_relation_pred[1],
-                                                "pred_obj_name_2": objects_relation_pred[2]
+                                                "pred_obj_name_2": objects_relation_pred[2],
+                                                "id": i
                                                 })
     print("Number of _00 items are: ", unique_counter)
 

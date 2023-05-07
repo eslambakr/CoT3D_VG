@@ -7,6 +7,7 @@
 """ScanNet object classes and relation vocabulary."""
 
 SCANNET_OBJECTS = [
+    'room',
     'air mattress',
     'airplane',
     'alarm',

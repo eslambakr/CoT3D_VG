@@ -62,11 +62,11 @@ if __name__ == '__main__':
     # Configurations:
     # ---------------
     load_dense = False
-    # scannet_dataset_path = "/home/eslam/scannet_dataset/"
-    # # scannet_dataset_path = "/media/eslam/0d208863-5cdb-4a43-9794-3ca8726831b3/3D_visual_grounding/dataset/"
+    scannet_dataset_path = "/home/eslam/scannet_dataset/"
+    scannet_dataset_path = "/media/eslam/0d208863-5cdb-4a43-9794-3ca8726831b3/3D_visual_grounding/dataset/"
 
     # # Read the scan related information
-    # top_scan_dir = scannet_dataset_path + "scannet/scans"
+    top_scan_dir = scannet_dataset_path + "scannet/scans"
     # idx_to_semantic_class_file = './referit3d/data/mappings/scannet_idx_to_semantic_class.json'
     # instance_class_to_semantic_class_file = './referit3d/data/mappings/scannet_instance_class_to_semantic_class.json'
     # axis_alignment_info_file = './referit3d/data/scannet/scans_axis_alignment_matrices.json'
@@ -75,19 +75,19 @@ if __name__ == '__main__':
     #                          instance_class_to_semantic_class_file,
     #                          axis_alignment_info_file)
     # # Loop on the whole scenes and load them once:
-    # all_scenes_paths = glob.glob(top_scan_dir+"/*")
-    # all_scenes_paths = list(np.unique(np.array(scan_ids)))
-    # scenes_dict = {}
-    # all_scan_ids = all_scenes_paths
-    # n_items = len(all_scan_ids)
-    # n_processes = min(mp.cpu_count(), n_items)
-    # pool = mp.Pool(n_processes)
-    # chunks = int(n_items / n_processes)
+    all_scenes_paths = glob.glob(top_scan_dir+"/*")
+    all_scenes_paths = list(np.unique(np.array(scan_ids)))
+    scenes_dict = {}
+    all_scan_ids = all_scenes_paths
+    n_items = len(all_scan_ids)
+    n_processes = min(mp.cpu_count(), n_items)
+    pool = mp.Pool(n_processes)
+    chunks = int(n_items / n_processes)
 
-    # for i, data in enumerate(pool.imap(scannet_loader, all_scan_ids, chunksize=chunks)):
-    #     scenes_dict[all_scan_ids[i]] = data
-    # pool.close()
-    # pool.join()
+    for i, data in enumerate(pool.imap(scannet_loader, all_scan_ids, chunksize=chunks)):
+        scenes_dict[all_scan_ids[i]] = data
+    pool.close()
+    pool.join()
 
     # scences_dict = {}
     # for i in tqdm(range(len(all_scan_ids))):  # Loop on the scenes
@@ -168,6 +168,7 @@ if __name__ == '__main__':
                     # Detect the target location from the predicted objects from the utterance:
                     target_idx = extract_target_loc_from_pred_objs_from_description(pred_objs_list=pred_objs_name,
                                                                                     target_class=df.instance_type[i])
+                    
                     if pred_obj_idx == target_idx:  # make sure it is the target not text-distractor
                         for anchor_id, anchor in enumerate(possible_anchors_dict[pred_obj_name]):
                             if anchor.object_id == df.target_id[i]:
@@ -199,6 +200,7 @@ if __name__ == '__main__':
                 # check unique obj may be after the target removal the obj become unique.
                 if len(possible_anchors_dict[pred_obj_name]) == 1:  # Unique object
                     pred_anchor[idx] = possible_anchors_dict[pred_obj_name][0]
+                    
                 else:  # Several objs
                     # 1- Get the center of each object:
                     # 1.1-unassigned objs of same class center

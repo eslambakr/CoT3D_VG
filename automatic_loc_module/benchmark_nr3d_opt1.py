@@ -42,13 +42,32 @@ if __name__ == '__main__':
             pred_objs_name, objs_start_loc, objs_end_loc, \
                 colored_utterance, adapted_utterance = obj_extractor.extract_objs_from_description(
                 utterance=df.utterance[i])            
-            objects_relations_pred =  obj_extractor.get_objects_relations_pred(df.utterance[i].lower(),pred_objs_name)
-            for objects_relation_pred in objects_relations_pred:
+                
+            objects_relations_1 = obj_extractor.get_objects_relations_pred(utterance=df.utterance[i])
+            sub_phrases, sub_phrases_start_obj_loc, sub_phrases_end_obj_loc, objs_name = obj_extractor.get_phrases_between_2_objs(ip_sentence=df.utterance[i]\
+                , objs_name=pred_objs_name)
+            
+            conflict_flag , pred_relationship_word_per_phrase = obj_extractor.get_relationship_between_2_objs(sub_phrases)
+            
+            total_relations = set()
+            res_relations = []
+            for _, object_relation in enumerate(objects_relations_1):
+                total_relations.add((object_relation[0], object_relation[2]))
+                res_relations.append(object_relation)
+            
+            for j, sub_phrase in enumerate(sub_phrases):
+                if((objs_name[sub_phrases_start_obj_loc[j]], objs_name[sub_phrases_end_obj_loc[j]]) in total_relations or pred_relationship_word_per_phrase[j] == None):
+                    continue 
+                res_relations.append([objs_name[sub_phrases_start_obj_loc[j]], pred_relationship_word_per_phrase[j], objs_name[sub_phrases_end_obj_loc[j]]])
+            # import pdb; pdb.set_trace()
+            for objects_relation_pred in res_relations:
                 pred_objs_name_all_scenes.append({"org_utterance": df.utterance[i].lower(),
-                                                "pred_obj_name_1": objects_relation_pred[0],
+                                                "object": objects_relation_pred[0],
                                                 "relation"        : objects_relation_pred[1],
-                                                "pred_obj_name_2": objects_relation_pred[2]
+                                                "subject": objects_relation_pred[2],
+                                                "id": i
                                                 })
+                
     print("Number of _00 items are: ", unique_counter)
 
     # Save the predicted objects in CSV file for manual verification:

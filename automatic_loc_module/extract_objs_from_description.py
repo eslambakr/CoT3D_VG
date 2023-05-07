@@ -34,20 +34,23 @@ class ExtractObjsFromDescription:
         # Define relationships words:
         self.above_words = ['aboard', 'above', 'on', 'onto', 'over', 'up', 'upper']
         self.below_words = ['low', 'lower', 'lowest', 'below', 'beneath', 'down', 'under', 'underneath']
-        self.far_words = ['far', 'farthest', 'furthest', 'away', 'ahead']
+        self.far_words = ['far', 'farthest', 'furthest', 'away', 'ahead', 'far', 'farther']
         self.near_words = ['nearest', 'holding', 'holds', 'supporting', 'supports', 'side', 'closest', 'along',
                            'alongside', 'near', 'nearby', 'apart', 'around', 'beside', 'inside', 'into', 'within',
                            'aside', 'astride', 'at', 'corner', 'through', 'together', 'toward',
-                           'by', 'next', 'close', 'about', 'round', 'alongside']
+                           'by', 'next', 'close', 'about', 'round', 'alongside', 'closer', 'closest']
         self.between_words = ['amid', 'amidst', 'among', 'amongst', 'between', 'middle', 'center']
         self.other_words = ['across', 'adjacent', 'against', 'behind', 'beyond', 'opposite', 'out', 'outside',
                             'left', 'right', 'front', 'back', 'on the right', 'on the left']
         self.plural_letters = ['s', 'ss', 'sh', 'ch', 'x', 'z']
         self.coloring_type = coloring_type
+       
         self.convert_words_to_standards = {"television": "tv", "couches": "couch", "shelves":"shelf"\
-                                           ,"bookcase":"bookshelf", "its": "it", "toilet seat" : "toilet"}
-        self.reverse_convert_words_to_standards = {"tv": "television", "couch": "couches", "shelf":"shelves"\
-                                                    ,"bookshelf":"bookcase", "it": "its"}
+                                           ,"bookcase":"bookshelf", "its": "it", "toilet seat" : "toilet",
+                                           "doorway":"door", "trashcan":"trash can", "trashcans":"trash can",  
+                                           "photos":"photo", 'barstool': 'chair',
+                                           "back pack":"backpack", "tub":"bathtub"}
+        self.reverse_convert_words_to_standards = {v: k for k, v in self.convert_words_to_standards.items()}
 
     def read_cls_json(self, file_name):
         f = open(file_name)
@@ -158,7 +161,7 @@ class ExtractObjsFromDescription:
                 nouns.append(doc[word_idx - 1].text + " " + token.text)
             # print(token.text, token.pos_)
             # print("HERE" , nouns)
-        print(nouns)
+        # print(nouns)
         return nouns
 
     def get_nouns_loc_in_txt(self, ip_sentence, nouns, isIrrelevantWord = False):
@@ -166,11 +169,20 @@ class ExtractObjsFromDescription:
         Get the locations of the input nouns from the input sentence.
         :return: list of locations. the list length should equal the length of the nouns.
         """
+        # import pdb; pdb.set_trace()
         ip_sentence = self.exclude_symbols(ip_sentence)
+        ip_sentence = ip_sentence.lower()
         new_string = ip_sentence.translate(str.maketrans('', '', string.punctuation))  # remove punctuation
         irrelevant_words = []
         nouns_loc = []
-        words = new_string.split(" ")        
+        words = new_string.split(" ")  
+        pre_preocessed_words = []
+        #Remove any empty string from the words
+        for word in words:
+            if word != "":
+                pre_preocessed_words.append(word)
+        words = pre_preocessed_words
+                  
         for noun in nouns:
             if noun in words:
                 temp_noun = noun
@@ -190,8 +202,13 @@ class ExtractObjsFromDescription:
             try:
                 loc = words.index(temp_noun)
             except:
-                if temp_noun in self.reverse_convert_words_to_standards.keys():
-                    temp_noun = self.reverse_convert_words_to_standards[temp_noun]
+                if temp_noun in self.convert_words_to_standards.keys():
+                    temp_noun = self.convert_words_to_standards[temp_noun]
+                    if(temp_noun.lower() == 'it'):
+                        temp_noun = 'its'
+                    elif temp_noun.lower() == 'its':
+                        temp_noun = 'it'
+                    
                     loc = words.index(temp_noun)
                 else: 
                     if isIrrelevantWord==True:
@@ -425,7 +442,7 @@ class ExtractObjsFromDescription:
         return colored_utterance
 
     def extract_objs_from_description(self, utterance):
-        print(utterance)
+        # print(utterance)
         org_utterance = utterance.lower()
         # Exclude symbols:
         utterance = self.exclude_symbols(org_utterance)
@@ -434,16 +451,16 @@ class ExtractObjsFromDescription:
         temp_utterance = self.add_the(utterance)
         # Extract nouns of the utterance using spacy:
         nouns = self.get_nouns(ip_sentence=temp_utterance)
-        print("get_nouns = ", nouns)
+        # print("get_nouns = ", nouns)
         # Align the detected nouns with the predefined classes of the data set:
         obj_nouns = self.nouns_cls_alignment(nouns)
-        print("nouns_cls_alignment = ", obj_nouns)
+        # print("nouns_cls_alignment = ", obj_nouns)
         # Merge names for the same object together:
         obj_nouns_refined = self.obj_names_refinement(utterance, obj_nouns)
-        print("obj_names_refinement = ", obj_nouns_refined)
+        # print("obj_names_refinement = ", obj_nouns_refined)
         # Align the detected nouns again with the predefined classes of the data set after refining them:
         obj_nouns_refined = self.nouns_cls_alignment_exact_matching(obj_nouns_refined,  check_substring = True)
-        print("nouns_cls_alignment_exact_matching = ", obj_nouns_refined)
+        # print("nouns_cls_alignment_exact_matching = ", obj_nouns_refined)
         # Exclude user defined nouns:
         obj_nouns_refined = self.exclude_user_defined_nouns(obj_nouns_refined)
         # Add defined nouns:
@@ -467,12 +484,12 @@ class ExtractObjsFromDescription:
                 start = subtree[0].i
                 end = subtree[-1].i + 1
                 return doc[start:end]
-    #This function does not handle a lot of cases
+
+
     def get_phrases_between_2_objs(self, ip_sentence, objs_name):
         
         nouns_loc,irrelevant_words = self.get_nouns_loc_in_txt(ip_sentence=ip_sentence, nouns=objs_name, isIrrelevantWord=True)
         #Sort objs_name and nouns_loc given the nouns_loc order
-        
         new_nouns = []
         for noun in objs_name:
             if noun in irrelevant_words:
@@ -501,6 +518,7 @@ class ExtractObjsFromDescription:
         
         
         for objs_name_idx, obj_loc_idx in enumerate(range(len(nouns_loc) - 1)):
+            # import pdb; pdb.set_trace()
             start = nouns_loc[obj_loc_idx] + len(objs_name[objs_name_idx].split(" "))  # +1 to skip the object name itself
             end = nouns_loc[obj_loc_idx + 1]
             sub_phrase = ip_sentence.split(" ")[start: end]
@@ -583,6 +601,9 @@ class ExtractObjsFromDescription:
 
     def get_relationship_between_2_objs(self, sub_phrases):
         pred_relationship_word_per_phrase = []
+        # import pdb; pdb.set_trace()
+        if(len(sub_phrases) == 0):
+            return False, None
         for i, sub_phrase in enumerate(sub_phrases):
             near_words_pred, far_words_pred, up_words_pred, low_words_pred, bet_words_pred, \
                 others_words_pred = [], [], [], [], [], []
@@ -606,7 +627,7 @@ class ExtractObjsFromDescription:
                 if re.search(r'\b%s\b' % (re.escape(rel_word)), sub_phrase) is not None:
                     others_words_pred.append(rel_word)
             # Check the conflict. If we find multiple relationship words in the same sub-phrase try to solve it:
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             conflict_flag, pred_relationship_word = self.check_relationship_conflict(
                 [near_words_pred, far_words_pred, up_words_pred, low_words_pred, bet_words_pred, others_words_pred])
             pred_relationship_word_per_phrase.append(pred_relationship_word)
@@ -689,11 +710,11 @@ class ExtractObjsFromDescription:
 
         # import pdb; pdb.set_trace()
         for e in graph_edge:
-            relation_between_two_objects = (e['subject'], e['relation'], e['object'])
+            relation_between_two_objects = ((e['object'], e['relation'], e['subject']))
             if relation_between_two_objects in unique_objects_relations:
                 continue
-            Objects_relations.append([e['subject'], e['relation'], e['object']])
-            unique_objects_relations.add((e['subject'], e['relation'], e['object']))
+            Objects_relations.append ([e['object'], e['relation'], e['subject']])
+            unique_objects_relations.add((e['object'], e['relation'], e['subject']))
             unique_objects_relations.add((e['object'], e['relation'], e['subject']))
         
         return Objects_relations
@@ -707,60 +728,75 @@ class ExtractObjsFromDescription:
         # displacy.serve(doc, style="dep")
 
 
-# if __name__ == '__main__':
-#     """
-#     near acomp (adjectival complement)
-#     to prep (prepositional modifier)
-#     behind prep
-#     farthest acomp
-#     from prep 
-#     above prep
-#     """
-#     # utterance = "find the office chair that is near to the other office chair which behind the copier."
-#     # utterance = "the monitor that is upper the printer"
-#     # utterance = "Wall lamp between two posters and behind the table"
-#     # utterance   = "LOOK DOWN ON ROOM FROM CEILING, CHOOSE BOX LOCATED IN THE CENTER OF THE ROOM, ITS ALSO THE LARGEST BOX TO SELECT."
-#     # utterance   = "LOOK DOWN ON THE ROOM AS YOU IF YOUR LOOKING IN FROM THE CEILING OF THE ROOM. CHOOSE THE TABLE THAT HAS ONLY 2 CHAIRS AROUND IT. THE OTHER TABLE HAS 4 CHAIRS."
-#     # utterance   = "There are 2 lamps in the room that look the same, but you need to find the one in the corner.  It has a cream colored vase and a white shade."
-#     # utterance     = "the roll of toilet paper on the shelf that is the second one in from the right hand side"
-#     # utterance     = "Facing row of plants, it's on far left not the taller plant."
-#     # utterance    = "The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV"
-#     # print(utterance)
-#     # utterance     = "the arm chair is in the upper right corner of the window."
-#     # utterance  = "facing the window the arm chair in the upper right corner"
-#     # utterance    = "it will be on the left , there is a small brown table on the left side of the cabinet."
-#     # utterance  = "the smaller of the stall doors"
-#     utterance = "The pillow that is in front of all the other pillows in the corner of the top shelf"
-#     utterance = "on the floor, you want the top option"
-#     obj_extractor = ExtractObjsFromDescription("./data/scannet_instance_class_to_semantic_class.json",
-#                                                coloring_type="colors")
-    
-#     objects_relations = obj_extractor.get_objects_relations_pred(utterance=utterance, objs_name=["window", "chair"])
-#     print("objects_relations = ", objects_relations)
-#     # objs_name, objs_start_loc, objs_end_loc,\
-#     #     colored_utterance, adapted_utterance = obj_extractor.extract_objs_from_description(utterance=utterance)
-    
-#     # tgt_from_txt = obj_extractor.get_subject_phrase(ip_sentence=utterance.lower(), objects = objs_name)
-#     # print("colored_utterance = ", colored_utterance)
-#     # print("objs_name = ", objs_name)
-#     # print("tgt_from_txt = ", tgt_from_txt)
-
-#     # # Get relationships words:
-#     # print("Extract the phrases between two objects:")
-#     # sub_phrases, sub_phrases_start_obj_loc, sub_phrases_end_obj_loc, objs_name = obj_extractor.get_phrases_between_2_objs(
-#     #     ip_sentence=utterance.lower(), objs_name=objs_name)
-    
-#     # import pdb; pdb.set_trace()
-#     # print("Extract the relationship between two objects:")
-#     # conflict_flag , pred_relationship_word_per_phrase = obj_extractor.get_relationship_between_2_objs(sub_phrases)
-    
-#     # if conflict_flag: 
-#     #     print("Conflict in the relationship words. Apply the second method to solve it.")
-#     #     #ip_sentence
-#     #     #objs_name
+if __name__ == '__main__':
+    """
+    near acomp (adjectival complement)
+    to prep (prepositional modifier)
+    behind prep
+    farthest acomp
+    from prep 
+    above prep
+    """
+    utterance = "find the office chair that is near to the other office chair which behind the copier."
+    # utterance = "the monitor that is upper the printer"
+    # utterance = "Wall lamp between two posters and behind the table"
+    # utterance   = "LOOK DOWN ON ROOM FROM CEILING, CHOOSE BOX LOCATED IN THE CENTER OF THE ROOM, ITS ALSO THE LARGEST BOX TO SELECT."
+    # utterance   = "LOOK DOWN ON THE ROOM AS YOU IF YOUR LOOKING IN FROM THE CEILING OF THE ROOM. CHOOSE THE TABLE THAT HAS ONLY 2 CHAIRS AROUND IT. THE OTHER TABLE HAS 4 CHAIRS."
+    # utterance   = "There are 2 lamps in the room that look the same, but you need to find the one in the corner.  It has a cream colored vase and a white shade."
+    # utterance     = "the roll of toilet paper on the shelf that is the second one in from the right hand side"
+    # utterance     = "Facing row of plants, it's on far left not the taller plant."
+    # utterance    = "The pillow on the couch that is on the right hand side of the room, when you are facing the TV, and is closest to the TV"
+    # print(utterance)
+    # utterance     = "the arm chair is in the upper right corner of the window."
+    # utterance  = "facing the window the arm chair in the upper right corner"
+    # utterance    = "it will be on the left , there is a small brown table on the left side of the cabinet."
+    # utterance  = "the smaller of the stall doors"
+    # utterance = "The pillow that is in front of all the other pillows in the corner of the top shelf"
+    # utterance = "on the floor, you want the top option"
+    # utterance = "From the set of chairs against the wall, the chair farthest from the red wall, in the group of chairs that is closer to the red wall"
+    # utterance   = "The trashcan that is next to the bright blue trashcan."
+    utterance = "In the right corner, the office chair that is at the end of the round table and closest to the red and white walls."
+    utterance = "'The lamp next to the window.'"
+    utterance = "Looking from an overhead view, there are four chairs on one side of the table and one chair on the other side of the table. Choose the on chair that sits alone."
+    utterance = 'Its a black bag by the door hanging over a reddish brown bag'
+    obj_extractor = ExtractObjsFromDescription("./data/scannet_instance_class_to_semantic_class.json",
+                                               coloring_type="colors")
+    # new_utterance = utterance.split(",")
+    # print("objects_relations = ", objects_relations)
+    objs_name, objs_start_loc, objs_end_loc,\
+        colored_utterance, adapted_utterance = obj_extractor.extract_objs_from_description(utterance=utterance)
         
+    objects_relations_1 = obj_extractor.get_objects_relations_pred(utterance=utterance)
+
+    # tgt_from_txt = obj_extractor.get_subject_phrase(ip_sentence=utterance.lower(), objects = objs_name)
+    print("OBJECT RELATION 1: ", objects_relations_1)
+    print("colored_utterance = ", colored_utterance)
+    print("objs_name = ", objs_name)
+    # print("tgt_from_txt = ", tgt_from_txt)
+
+    # # Get relationships words:
+    print("Extract the phrases between two objects:")
+    sub_phrases, sub_phrases_start_obj_loc, sub_phrases_end_obj_loc, objs_name = obj_extractor.get_phrases_between_2_objs(
+        ip_sentence=utterance.lower(), objs_name=objs_name)
     
+    # import pdb; pdb.set_trace()
+    print("Extract the relationship between two objects:")
+    conflict_flag , pred_relationship_word_per_phrase = obj_extractor.get_relationship_between_2_objs(sub_phrases)
+    print(pred_relationship_word_per_phrase)
     
-#     # for i, sub_phrase in enumerate(sub_phrases):
-#     #     print(i, "--> phrase:", sub_phrase, ", start_obj:", objs_name[sub_phrases_start_obj_loc[i]],
-#     #           ", end_obj:", objs_name[sub_phrases_end_obj_loc[i]], ", relation:", pred_relationship_word_per_phrase[i])
+    total_relations = set()
+    res_relations = []
+    for i, object_relation in enumerate(objects_relations_1):
+        total_relations.add((object_relation[0], object_relation[2]))
+        res_relations.append(object_relation)
+    
+    for i, sub_phrase in enumerate(sub_phrases):
+        if((objs_name[sub_phrases_start_obj_loc[i]], objs_name[sub_phrases_end_obj_loc[i]]) in total_relations or pred_relationship_word_per_phrase[i] == None):
+            continue 
+        res_relations.append([objs_name[sub_phrases_start_obj_loc[i]], pred_relationship_word_per_phrase[i], objs_name[sub_phrases_end_obj_loc[i]]])
+        
+    print("RES_Relation: ", res_relations)
+    
+    # for i, sub_phrase in enumerate(sub_phrases):
+    #     print(i, "--> phrase:", sub_phrase, ", start_obj:", objs_name[sub_phrases_start_obj_loc[i]],
+    #           ", end_obj:", objs_name[sub_phrases_end_obj_loc[i]], ", relation:", pred_relationship_word_per_phrase[i])

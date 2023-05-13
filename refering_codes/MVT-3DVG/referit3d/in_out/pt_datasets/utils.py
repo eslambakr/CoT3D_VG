@@ -2,9 +2,23 @@ import warnings
 import numpy as np
 import random
 import multiprocessing as mp
+import csv
+from tqdm import tqdm
+import pandas as pd
+import json
 from torch.utils.data import DataLoader
 
 
+relation_synonyms = {
+    "near": ["near", "near to", "close", "closer to", "close to", "besides", "by", "next to", "towards", "along", "alongside", "with"],
+    "front": ["opposite", "opposite to", "opposite of", "opposite from", "in front of", "faces", "facing"],
+    "far": ["farther", "far from", "farthest from", "farthest", "far", "far away from"],
+    "on": ["atop of", "above", "on top", "on top of", "on", "higher", "over", "lying on", "onto"],
+    "down": ["below", "down", "beneath", "underneath", "lower", "under", "beaneath"],
+    "right": ["right on", "right of", "right", "to the right of", "right most", "on the right side of", "on the right of", "right"],
+    "left": ["left on", "left of", "left", "on the left of", "on the left side of", "left most", "to the left of", "left"],
+    "back": ["beyond", "back", "behind", "on the back of"],
+}
 def max_io_workers():
     """ number of available cores -1."""
     n = max(mp.cpu_count() - 1, 1)
@@ -149,3 +163,97 @@ def flipcoin(percent=50):
     return Treu or False based on the given percentage.
     """
     return random.randrange(100) < percent
+
+
+def read_csv_as_list_dict(csv_pth):
+    rows = []
+    with open(csv_pth, 'r') as csvfile:
+        for row in csv.DictReader(csvfile, delimiter=','):
+            rows.append(row)
+    return rows
+
+
+def clean_obj_path(rows):
+    print("Cleaning the objects path......")
+    for row in tqdm(rows):
+        clean_objs = []
+        if '"' in row["path"]:
+            objects = row["path"].split(',')
+            for obj in objects:
+                clean_objs.append(obj.strip().split('"')[1])
+        row["path"] = clean_objs
+    print("Finish the cleaning.")
+    return rows
+    
+def get_num_objs_nr3d(csv_pth):
+    rows = read_csv_as_list_dict(csv_pth)
+    rows = clean_obj_path(rows)
+    
+    num_objs_per_sentences = []
+    for row in rows:
+        num_objs_per_sentences.append(len(row["path"]))
+    
+    return num_objs_per_sentences
+
+
+def get_logical_pth_lang(data_dict):
+    """
+    Convert the string into readable list
+    """
+    for idx, row in enumerate(data_dict["path"]):
+        clean_objs = []
+        if "'" in row:
+            objects = row.split(',')
+            for obj in objects:
+                obj = obj.strip().split("'")[1]
+                if '*' in obj:
+                    obj = obj[1:]
+                clean_objs.append(obj)
+        data_dict["path"][idx] = clean_objs
+
+    return data_dict
+
+
+def clean_paraphrased(data_dict):
+    """
+    Convert the string into readable list
+    """
+    for idx, row in enumerate(data_dict["paraphrases"]):
+        clean_objs = []
+        if '"' in row:
+            objects = row.split(',')
+            for obj in objects:
+                obj = obj.strip().split('"')[1]
+                clean_objs.append(obj)
+        data_dict["paraphrases"][idx] = clean_objs
+
+    return data_dict
+
+
+def create_sr3d_classes_2_idx(json_pth):
+    with open(json_pth) as json_file:
+        data = json.load(json_file)
+
+    instance_labels = set()
+    instance_labels.update([k for k in data])
+
+    class_to_idx = {}
+    i = 0
+    for el in sorted(instance_labels):
+        class_to_idx[el] = i
+        i += 1
+
+    class_to_idx['pad'] = len(class_to_idx)
+    class_to_idx['no_obj'] = len(class_to_idx)
+
+    return class_to_idx
+
+
+if __name__ == '__main__':
+    num_objs_per_sentences = get_num_objs_nr3d(csv_pth="/home/abdelrem/3d_codes/scannet_dataset/scannet/nr3d_cot.csv")
+    print(max(num_objs_per_sentences))
+    print(sum(num_objs_per_sentences)/len(num_objs_per_sentences))
+    data_dict = pd.read_csv("/home/abdelrem/3d_codes/scannet_dataset/scannet/nr3d_cot.csv")
+    data_dict = get_logical_pth_lang(data_dict)
+    print(data_dict["path"][0])
+    print(create_sr3d_classes_2_idx(json_pth="referit3d/data/mappings/scannet_instance_class_to_semantic_class.json"))

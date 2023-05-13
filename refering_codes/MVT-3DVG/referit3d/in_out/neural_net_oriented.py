@@ -5,6 +5,7 @@ import numpy as np
 from ast import literal_eval
 
 from .vocabulary import build_vocab, Vocabulary
+from .pt_datasets.utils import get_logical_pth_lang, clean_paraphrased
 from ..utils import read_lines, unpickle_data
 from ..data_generation.nr3d import decode_stimulus_string
 
@@ -61,6 +62,13 @@ def load_referential_data(args, referit_csv, scans_split):
     """
     referit_data = pd.read_csv(referit_csv)
 
+    is_nr = True if 'nr' in args.referit3D_file else False
+    if is_nr and (args.anchors != 'none'):
+        referit_data = get_logical_pth_lang(referit_data)
+    
+    if args.textaug_paraphrase_percentage:
+        referit_data = clean_paraphrased(referit_data)
+
     if args.mentions_target_class_only:
         n_original = len(referit_data)
         referit_data = referit_data[referit_data['mentions_target_class']]
@@ -68,8 +76,12 @@ def load_referential_data(args, referit_csv, scans_split):
         print('Dropping utterances without explicit '
               'mention to the target class {}->{}'.format(n_original, len(referit_data)))
 
-    referit_data = referit_data[['tokens', 'instance_type', 'scan_id', 'anchors_types', 'anchor_ids',
-                                 'dataset', 'target_id', 'utterance', 'stimulus_id']]
+    keys = ['tokens', 'instance_type', 'scan_id', 'dataset', 'target_id', 'utterance', 'stimulus_id']
+    added_keys = ['path', 'anchor_ids', 'num_anchors', 'paraphrases'] if is_nr else ['anchors_types', 'anchor_ids']
+    if args.target_aug_percentage and False:
+        added_keys += ["relation", "object", "subject"]
+    keys += added_keys
+    referit_data = referit_data[keys]
     referit_data.tokens = referit_data['tokens'].apply(literal_eval)
 
     # Add the is_train data to the pandas data frame (needed in creating data loaders for the train and test)

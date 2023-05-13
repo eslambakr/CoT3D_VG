@@ -23,6 +23,6 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     --predict_lang_anchors True \
     --lang_filter_objs False \
     --visaug_shuffle_mode 'none' \
-    --visaug_extracted_obj_path '/home/abdelrem/3d_codes/CoT3D_VG/data/' \
+    --visaug_extracted_obj_path '/home/abdelrem/3d_codes/CoT3D_VG/data/sr3d/' \
     --visaug_pc_augment True \
     --train_data_percent 1.0

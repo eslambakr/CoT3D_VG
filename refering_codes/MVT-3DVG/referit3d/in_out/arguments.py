@@ -71,11 +71,19 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--lang_filter_objs', type=str2bool, default=False)
     parser.add_argument('--visaug_shuffle_mode', type=str, default="none", 
                         help="Should be something from this set [none, scannet, 3DCoMPaT]")
+    parser.add_argument('--shuffle_objects_percentage', type=int, default=0, 
+                        help="The percentage of (augmentaion) shuffling the objects")
     parser.add_argument('--visaug_extracted_obj_path', type=str, default="", 
                         help="the path of hdf5 file which contains the extracted objects from scannet or 3DCoMPaT to be used in augmentation.")
     parser.add_argument('--visaug_pc_augment', type=str2bool, default=False)
+    parser.add_argument('--textaug_paraphrase_percentage', type=int, default=0)
     parser.add_argument('--train_data_percent', type=float, default=1.0, 
                         help="sample from the training data given this ratio, for data effeciency expirements.")
+    parser.add_argument('--max_num_anchors', type=int, default=2,  help="maximum number of allowed anchors")
+    parser.add_argument('--train_data_repeatation', type=int, default=1,  help="should be larger than 1 to repeat")
+    parser.add_argument('--target_aug_percentage', type=int, default=0,  help="swap target with anchor in case of 1 anchor only exist")
+    parser.add_argument('--gaussian_latent', type=str2bool, default=False,  help="learning gaussian shared latent representation before heads")
+    parser.add_argument('--distractor_aux_loss_flag', type=str2bool, default=False,  help="Add head to predict which objs are distractors")
 
     #
     # Model arguments

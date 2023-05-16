@@ -88,7 +88,7 @@ class ListeningDataset(Dataset):
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
             path = ref['path']
             self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
-            if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train:  # swap target with anchor
+            if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
                 path.reverse()
                 target = scan.three_d_objects[self.anchors_ids[0]]  # [0] as we are sure it is only one anchor
                 self.anchors_ids = [ref['target_id']]
@@ -96,6 +96,7 @@ class ListeningDataset(Dataset):
                 relation = sample(relation_synonyms[self.opposite_dict[ref['relation']]], 1)[0]
                 #relation = sample(relation_synonyms[self.opposite_dict[mask.relation.values[0]]], 1)[0]
                 tokens = path[-1] + " " + relation + " " + path[0]
+                print(ref['relation'])
                 target_augmented_flag = True
 
             anchors = []
@@ -341,7 +342,7 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
     pc_transforms = None
     if pc_augment:
         pc_transforms = T.Compose([
-            RandomSymmetry(p=0.05),
+            RandomSymmetry(axis=[True, True, False], p=0.05),
             RandomNoise(sigma=0.01, clip=0.05, p=0.05),
             Random3AxisRotation(rot_x=5, rot_y=5, rot_z=5, p=0.05),
             ChromaticTranslation(p=0.05),
@@ -358,14 +359,20 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
         if split == 'train':
             extend = 1
             org_training_len = len(d_set)
+            if args.target_aug_percentage:
+                unique_rel_df = pd.read_csv("/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_unique_rel_anchor_data.csv")
+                print("unique_rel_df: ", len(unique_rel_df))
+                print("d_set before: ", len(d_set))
+                d_set = pd.merge(d_set, unique_rel_df, how='left', on=['utterance'], suffixes=('', '_y'))
+                print("d_set after: ", len(d_set))
             if args.train_data_percent < 1:
                 # Filter the samples which don't contain the max_num_anchors
                 d_set = d_set[d_set['num_anchors'] <= max_anchors]
-                if args.target_aug_percentage:
+                if args.target_aug_percentage and (args.train_data_percent==0.1) and (max_anchors==1):
                     unique_rel_df = pd.read_csv("/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_unique_rel_anchor_data.csv")
                     d_set = pd.merge(d_set, unique_rel_df, how='inner', on=['utterance'], suffixes=('', '_y'))
-                    extend = org_training_len/len(d_set)
-                    print("-------- org_training_len = ", org_training_len, "   ", len(d_set))
+                extend = org_training_len/len(d_set)
+                print("-------- org_training_len = ", org_training_len, "   ", len(d_set))
             d_set = d_set.sample(frac=args.train_data_percent*extend)
             print("-------- d_set = ", len(d_set))
             if args.train_data_repeatation > 1:

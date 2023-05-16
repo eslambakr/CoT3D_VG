@@ -156,6 +156,12 @@ class ReferIt3DNet_transformer(nn.Module):
                                                      nn.ReLU(), nn.Dropout(self.dropout_rate),
                                                      nn.Linear(self.inner_dim, self.ref_out))
 
+        if self.distractor_aux_loss_flag:
+            self.distractor_aux_head = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
+                                                     nn.ReLU(), nn.Dropout(self.dropout_rate),
+                                                     nn.Linear(self.inner_dim, 1))
+            self.distractor_aux_bce = nn.BCEWithLogitsLoss()
+            
         if self.gaussian_latent:
             self.inner_dim = int(self.inner_dim * 2)
 
@@ -166,11 +172,6 @@ class ReferIt3DNet_transformer(nn.Module):
         self.lang_logits_loss = nn.CrossEntropyLoss()
         self.lang_logits_loss_aux = nn.CrossEntropyLoss()
         self.class_logits_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
-        if self.distractor_aux_loss_flag:
-            self.distractor_aux_head = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                                     nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                                     nn.Linear(self.inner_dim, 1))
-            self.distractor_aux_bce = nn.BCEWithLogitsLoss()
 
     @torch.no_grad()
     def aug_input(self, input_points, box_infos):

@@ -5,15 +5,15 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_nr3d_org/keep_all_points_00_view_with_global_scan_alignment/keep_all_points_00_view_with_global_scan_alignment.pkl \
     -referit3D-file /home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_ref_paraphrases_num_anchors.csv \
     --bert-pretrain-path /home/abdelrem/3d_codes/MVT-3DVG/weights/bert-base-uncased/ \
-    --log-dir logs/MVT_nr3d_cot_cross_10%_filtered_anchors=2_CoTLang_drop15%_distractorAuxLoss \
-    --n-workers 4 \
+    --log-dir logs/MVT_nr3d_cot_cross_40%_filtered_anchors=7_CoTLang_drop15%_textaug50_targetaug50_visPC20_distractorAuxLoss \
+    --n-workers 6 \
     --model 'referIt3DNet_transformer' \
     --unit-sphere-norm True \
     --batch-size 24 \
     --encoder-layer-num 3 \
     --decoder-layer-num 4 \
     --decoder-nhead-num 8 \
-    --gpu "2" \
+    --gpu "3" \
     --view_number 4 \
     --rotate_number 4 \
     --label-lang-sup True \
@@ -25,12 +25,12 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     --visaug_shuffle_mode 'none' \
     --shuffle_objects_percentage 0 \
     --visaug_extracted_obj_path '/home/abdelrem/3d_codes/CoT3D_VG/data/nr3d/' \
-    --visaug_pc_augment False \
-    --train_data_percent 0.1 \
-    --max_num_anchors 2 \
+    --visaug_pc_augment True \
+    --train_data_percent 0.4 \
+    --max_num_anchors 7 \
     --dropout-rate 0.15 \
-    --textaug_paraphrase_percentage 0 \
-    --target_aug_percentage 0 \
+    --textaug_paraphrase_percentage 50 \
+    --target_aug_percentage 50 \
     --gaussian_latent False \
     --distractor_aux_loss_flag True \
     --train_data_repeatation 1

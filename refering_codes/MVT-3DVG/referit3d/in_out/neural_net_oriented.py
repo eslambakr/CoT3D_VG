@@ -78,8 +78,6 @@ def load_referential_data(args, referit_csv, scans_split):
 
     keys = ['tokens', 'instance_type', 'scan_id', 'dataset', 'target_id', 'utterance', 'stimulus_id']
     added_keys = ['path', 'anchor_ids', 'num_anchors', 'paraphrases'] if is_nr else ['anchors_types', 'anchor_ids']
-    if args.target_aug_percentage and False:
-        added_keys += ["relation", "object", "subject"]
     keys += added_keys
     referit_data = referit_data[keys]
     referit_data.tokens = referit_data['tokens'].apply(literal_eval)
@@ -105,7 +103,10 @@ def load_referential_data(args, referit_csv, scans_split):
         is_train = sr3d.scan_id.apply(lambda x: x in scans_split['train'])
         sr3d['is_train'] = is_train
         sr3d = sr3d[is_train]
-        sr3d = sr3d[referit_data.columns]
+        # Eslam:
+        keys = ['tokens', 'instance_type', 'scan_id', 'dataset', 'target_id', 'utterance', 'stimulus_id', 'anchors_types', 'anchor_ids', 'is_train']
+        sr3d = sr3d[keys]
+        # sr3d = sr3d[referit_data.columns]
         print('Dataset-size before augmentation:', len(referit_data))
         referit_data = pd.concat([referit_data, sr3d], axis=0)
         referit_data.reset_index(inplace=True, drop=True)

@@ -68,7 +68,7 @@ if __name__ == '__main__':
     mean_rgb, vocab = compute_auxiliary_data(referit_data, all_scans_in_dict, args)
     data_loaders = make_data_loaders(args, referit_data, vocab, class_to_idx, all_scans_in_dict, mean_rgb)
     # Prepare GPU environment
-    set_gpu_to_zero_position(args.gpu)  # Pnet++ seems to work only at "gpu:0"
+    set_gpu_to_zero_position(args.gpu)
 
     device = torch.device('cuda')
     seed_training_code(args.random_seed)

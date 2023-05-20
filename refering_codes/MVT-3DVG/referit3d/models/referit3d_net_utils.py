@@ -219,7 +219,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
 
 
 @torch.no_grad()
-def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUALIZATION=True,tokenizer=None):
+def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUALIZATION=True,tokenizer=None, epoch=None):
     model.eval()
 
     res = dict()
@@ -230,7 +230,18 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
     res['context_size'] = list()
     res['guessed_correctly_among_true_class'] = list()
 
-    batch_keys = make_batch_keys(args, extras=['context_size', 'target_class_mask'])
+    extras = None
+    if args.anchors != 'none':
+        extras = ['anchors_pos']
+
+    if args.predict_lang_anchors:
+        if type(extras) == list:
+            extras += ['anchor_classes']
+        else:
+            extras = ['anchor_classes']
+    extras += ['context_size', 'target_class_mask']
+
+    batch_keys = make_batch_keys(args, extras=extras)
 
     if FOR_VISUALIZATION:
         res['utterance'] = list()
@@ -246,16 +257,15 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
                 continue
             batch[k] = batch[k].to(device)
 
-        # if args.object_encoder == 'pnet':
-        #     batch['objects'] = batch['objects'].permute(0, 1, 3, 2)
-
         lang_tokens = tokenizer(batch['tokens'], return_tensors='pt', padding=True)
         for name in lang_tokens.data:
             lang_tokens.data[name] = lang_tokens.data[name].cuda()
         batch['lang_tokens'] = lang_tokens
 
-        LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS = model(batch)
+        LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS = model(batch, epoch)
+        LOSS = LOSS_target[0]
         LOSS = LOSS.mean()
+
         out = {}
         out['logits'] = LOGITS
         out['class_logits'] = CLASS_LOGITS
@@ -269,11 +279,13 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
                 if c[i] < n_obj:
                     out['logits'][i][c[i]:] = -10e6
 
+        target = batch['target_pos']
+        #target = LOSS_target[1]
         predictions = torch.argmax(out['logits'], dim=1)
-        res['guessed_correctly'].append((predictions == batch['target_pos']).cpu().numpy())
+        res['guessed_correctly'].append((predictions == target).cpu().numpy())
         res['confidences_probs'].append(F.softmax(out['logits'], dim=1).cpu().numpy())
         res['contrasted_objects'].append(batch['class_labels'].cpu().numpy())
-        res['target_pos'].append(batch['target_pos'].cpu().numpy())
+        res['target_pos'].append(target.cpu().numpy())
         res['context_size'].append(batch['context_size'].cpu().numpy())
 
         if FOR_VISUALIZATION:
@@ -288,7 +300,7 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
         mask = batch['target_class_mask']
         out['logits'] = out['logits'].float() * mask.float() + (~mask).float() * cancellation
         predictions = torch.argmax(out['logits'], dim=1)
-        res['guessed_correctly_among_true_class'].append((predictions == batch['target_pos']).cpu().numpy())
+        res['guessed_correctly_among_true_class'].append((predictions == target).cpu().numpy())
 
     res['guessed_correctly'] = np.hstack(res['guessed_correctly'])
     res['confidences_probs'] = np.vstack(res['confidences_probs'])

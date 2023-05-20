@@ -5,7 +5,8 @@ The MIT License (MIT)
 Originally created at 7/13/20, for Python 3.x
 Copyright (c) 2020 Panos Achlioptas (pachlioptas@gmail.com) & Stanford Geometric Computing Lab
 """
-
+import torch.multiprocessing
+torch.multiprocessing.set_sharing_strategy('file_system')
 import pandas as pd
 
 from .utterances import is_explicitly_view_dependent
@@ -14,7 +15,7 @@ from ..in_out.pt_datasets.utils import dataset_to_dataloader
 from ..models.referit3d_net_utils import detailed_predictions_on_dataset
 
 
-def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out_file=None, visualize_output=True,tokenizer=None):
+def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out_file=None, visualize_output=True,tokenizer=None, epoch=None):
     """
     :param dataset:
     :param net_stats:
@@ -40,7 +41,7 @@ def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out
     for seed in test_seeds:
         d_loader = dataset_to_dataloader(dataset, 'test', args.batch_size, n_workers=5, seed=seed)
         assert d_loader.dataset.references is references
-        net_stats = detailed_predictions_on_dataset(model, d_loader, args=args, device=device, FOR_VISUALIZATION=True,tokenizer=tokenizer)
+        net_stats = detailed_predictions_on_dataset(model, d_loader, args=args, device=device, FOR_VISUALIZATION=True,tokenizer=tokenizer, epoch=epoch)
         net_stats_all_seed.append(net_stats)
 
     if visualize_output:

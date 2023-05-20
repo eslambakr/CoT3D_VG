@@ -5,15 +5,15 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_sr3d_org/keep_all_points_with_global_scan_alignment/keep_all_points_with_global_scan_alignment.pkl \
     -referit3D-file /home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_ref_paraphrases_num_anchors.csv \
     --bert-pretrain-path /home/abdelrem/3d_codes/MVT-3DVG/weights/bert-base-uncased/ \
-    --log-dir logs/MVT_nr3dsr3d_cot_cross_100%_filtered_anchors=7_distractorAuxLoss_64 \
-    --n-workers 16 \
+    --log-dir logs/MVT_nr3dsr3d_cot_cross_100%_filtered_anchors=7 \
+    --n-workers 8 \
     --model 'referIt3DNet_transformer' \
     --unit-sphere-norm True \
-    --batch-size 64 \
+    --batch-size 24 \
     --encoder-layer-num 3 \
     --decoder-layer-num 4 \
     --decoder-nhead-num 8 \
-    --gpu "0" \
+    --gpu "1" \
     --view_number 4 \
     --rotate_number 4 \
     --label-lang-sup True \
@@ -32,6 +32,6 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     --textaug_paraphrase_percentage 0 \
     --target_aug_percentage 0 \
     --gaussian_latent False \
-    --distractor_aux_loss_flag True \
+    --distractor_aux_loss_flag False \
     --train_data_repeatation 1 \
     --augment-with-sr3d /home/abdelrem/3d_codes/scannet_dataset/scannet/sr3d.csv

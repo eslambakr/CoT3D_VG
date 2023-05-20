@@ -161,3 +161,4 @@ cython_debug/
 *.pyc
 refering_codes/MVT-3DVG/logs
 refering_codes/MVT-3DVG/weights
+refering_codes/vil3dref/log

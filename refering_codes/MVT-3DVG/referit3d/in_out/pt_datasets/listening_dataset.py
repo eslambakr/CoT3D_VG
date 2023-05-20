@@ -82,22 +82,23 @@ class ListeningDataset(Dataset):
         scan_id = ref['scan_id']
         scan = self.scans[ref['scan_id']]
         target = scan.three_d_objects[ref['target_id']]
+        is_nr3d = ref['dataset'] == 'nr3d'
         # Get Anchors
         anchors = None
         path = None
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
-            path = ref['path']
             self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
-            if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
-                path.reverse()
-                target = scan.three_d_objects[self.anchors_ids[0]]  # [0] as we are sure it is only one anchor
-                self.anchors_ids = [ref['target_id']]
-                #mask = self.unique_rel_df[self.unique_rel_df.utterance.str.lower().isin([ref['utterance']])]
-                relation = sample(relation_synonyms[self.opposite_dict[ref['relation']]], 1)[0]
-                #relation = sample(relation_synonyms[self.opposite_dict[mask.relation.values[0]]], 1)[0]
-                tokens = path[-1] + " " + relation + " " + path[0]
-                print(ref['relation'])
-                target_augmented_flag = True
+            if is_nr3d:
+                path = ref['path']
+                if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
+                    path.reverse()
+                    target = scan.three_d_objects[self.anchors_ids[0]]  # [0] as we are sure it is only one anchor
+                    self.anchors_ids = [ref['target_id']]
+                    #mask = self.unique_rel_df[self.unique_rel_df.utterance.str.lower().isin([ref['utterance']])]
+                    relation = sample(relation_synonyms[self.opposite_dict[ref['relation']]], 1)[0]
+                    #relation = sample(relation_synonyms[self.opposite_dict[mask.relation.values[0]]], 1)[0]
+                    tokens = path[-1] + " " + relation + " " + path[0]
+                    target_augmented_flag = True
 
             anchors = []
             for anchor_id in self.anchors_ids:
@@ -134,7 +135,6 @@ class ListeningDataset(Dataset):
         # tokens = np.array(tokens)
         # tokens = np.array([102]*(self.max_seq_len + 2 + self.max_context_size * 2))
         # tokens[:min(self.max_seq_len + 2, len(emb))] = emb[:min(self.max_seq_len + 2, len(emb))]
-        is_nr3d = ref['dataset'] == 'nr3d'
 
         return scan, target, tokens, is_nr3d, scan_id, anchors, path
 
@@ -307,7 +307,7 @@ class ListeningDataset(Dataset):
         res['box_corners'] = box_corners
 
         if self.visualization:
-            distrators_pos = np.zeros((6))  # 6 is the maximum context size we used in dataset collection
+            distrators_pos = np.zeros((50))  # 6 is the maximum context size we used in dataset collection
             object_ids = np.zeros((self.max_context_size))
             j = 0
             for k, o in enumerate(context):

@@ -15,7 +15,7 @@ from .referit3d_net import ReferIt3DNet
 
 
 class ReferIt3DNetMix(nn.Module):
-    def __init__(self, config, device):
+    def __init__(self, config, device, cot_cfg):
         super().__init__()
         self.config = config
         self.device = device
@@ -25,12 +25,12 @@ class ReferIt3DNetMix(nn.Module):
         teacher_model_cfg = copy.deepcopy(config)
         teacher_model_cfg.model_type = 'gtlabel'
         teacher_model_cfg.obj_encoder.use_color_enc = teacher_model_cfg.obj_encoder.teacher_use_color_enc
-        self.teacher_model = ReferIt3DNet(teacher_model_cfg, device)
+        self.teacher_model = ReferIt3DNet(teacher_model_cfg, device, cot_cfg)
 
         student_model_cfg = copy.deepcopy(config)
         student_model_cfg.model_type = 'gtpcd'
         student_model_cfg.obj_encoder.use_color_enc = student_model_cfg.obj_encoder.student_use_color_enc
-        self.student_model = ReferIt3DNet(student_model_cfg, device)
+        self.student_model = ReferIt3DNet(student_model_cfg, device, cot_cfg)
 
         for param in self.teacher_model.parameters():
             param.requires_grad = False

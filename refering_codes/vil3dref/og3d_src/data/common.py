@@ -1,5 +1,19 @@
 import torch
+import random
 from einops import repeat
+
+
+relation_synonyms = {
+    "near": ["near", "near to", "close", "closer to", "close to", "besides", "by", "next to", "towards", "along", "alongside", "with"],
+    "front": ["opposite", "opposite to", "opposite of", "opposite from", "in front of", "faces", "facing"],
+    "far": ["farther", "far from", "farthest from", "farthest", "far", "far away from"],
+    "on": ["atop of", "above", "on top", "on top of", "on", "higher", "over", "lying on", "onto"],
+    "down": ["below", "down", "beneath", "underneath", "lower", "under", "beneath"],
+    "right": ["right on", "right of", "right", "to the right of", "right most", "on the right side of", "on the right of", "right"],
+    "left": ["left on", "left of", "left", "on the left of", "on the left side of", "left most", "to the left of", "left"],
+    "back": ["beyond", "back", "behind", "on the back of"],
+}
+
 
 def gen_seq_masks(seq_lens, max_len=None):
     """
@@ -38,3 +52,9 @@ def pad_tensors(tensors, lens=None, pad=0, pad_ori_data=False):
                 output.data[i, s: e] = t.data[:e-s]
     return output
 
+
+def flipcoin(percent=50):
+    """
+    return Treu or False based on the given percentage.
+    """
+    return random.randrange(100) < percent

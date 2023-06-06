@@ -30,7 +30,7 @@ from model.referit3d_net_mix import ReferIt3DNetMix
 
 
 
-def build_datasets(data_cfg):
+def build_datasets(data_cfg, cot_cfg):
     trn_dataset = GTLabelPcdDataset(
         data_cfg.trn_scan_split, data_cfg.anno_file, 
         data_cfg.scan_dir, data_cfg.category_file,
@@ -41,6 +41,15 @@ def build_datasets(data_cfg):
         num_points=data_cfg.num_points, in_memory=True,
         gt_scan_dir=data_cfg.get('gt_scan_dir', None),
         iou_replace_gt=data_cfg.get('iou_replace_gt', 0),
+        anchors_mode=cot_cfg.anchors,
+        max_anchors=cot_cfg.max_num_anchors, 
+        predict_lang_anchors=cot_cfg.predict_lang_anchors, 
+        target_aug_percentage=cot_cfg.target_aug_percentage, 
+        distractor_aux_loss_flag=cot_cfg.distractor_aux_loss_flag,
+        data_csv_pth=cot_cfg.data_csv_pth,
+        train_data_percent=cot_cfg.train_data_percent,
+        is_nr3d=data_cfg.is_nr3d,
+        repeat=data_cfg.repeat
     )
     val_dataset = GTLabelPcdDataset(
         data_cfg.val_scan_split, data_cfg.anno_file, 
@@ -51,6 +60,15 @@ def build_datasets(data_cfg):
         num_points=data_cfg.num_points, in_memory=True,
         gt_scan_dir=data_cfg.get('gt_scan_dir', None),
         iou_replace_gt=data_cfg.get('iou_replace_gt', 0),
+        anchors_mode=cot_cfg.anchors,
+        max_anchors=cot_cfg.max_num_anchors, 
+        predict_lang_anchors=cot_cfg.predict_lang_anchors, 
+        target_aug_percentage=0, 
+        distractor_aux_loss_flag=cot_cfg.distractor_aux_loss_flag,
+        data_csv_pth=cot_cfg.data_csv_pth,
+        train_data_percent=1.0,
+        is_nr3d=data_cfg.is_nr3d,
+        repeat=data_cfg.repeat
     )
     return trn_dataset, val_dataset
 
@@ -85,7 +103,8 @@ def main(opts):
 
     # Prepare model
     model_config = EasyDict(opts.model)
-    model = ReferIt3DNetMix(model_config, device)
+    cot_cfg = EasyDict(opts.cot)
+    model = ReferIt3DNetMix(model_config, device, cot_cfg)
 
     num_weights, num_trainable_weights = 0, 0
     for p in model.parameters():
@@ -126,7 +145,7 @@ def main(opts):
 
     # load data training set
     data_cfg = EasyDict(opts.dataset)
-    trn_dataset, val_dataset = build_datasets(data_cfg)
+    trn_dataset, val_dataset = build_datasets(data_cfg, cot_cfg)
     collate_fn = gtlabelpcd_collate_fn
     LOGGER.info('train #scans %d, #data %d' % (len(trn_dataset.scan_ids), len(trn_dataset)))
     LOGGER.info('val #scans %d, #data %d' % (len(val_dataset.scan_ids), len(val_dataset)))

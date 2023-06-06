@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import os
 from typing import Tuple, Union, Dict, Any
 
 import torch
@@ -33,6 +34,13 @@ def set_cuda(opts) -> Tuple[bool, int, torch.device]:
         default_gpu = dist.get_rank() == 0
         if default_gpu:
             LOGGER.info(f"Found {dist.get_world_size()} GPUs")
+    elif opts.gpu is not None:
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(opts.gpu)
+        device = torch.device("cuda:"+str(opts.gpu))
+        device = torch.device("cuda:"+str(0))
+        n_gpu = 1
+        default_gpu = True
     else:
         default_gpu = True
         device = torch.device("cuda")

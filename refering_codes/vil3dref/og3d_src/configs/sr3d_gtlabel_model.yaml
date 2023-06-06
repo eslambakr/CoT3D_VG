@@ -1,10 +1,11 @@
-output_dir: ../datasets/referit3d/exprs/gtlabels/exp01
+output_dir: ../log/vil_teacher_rerpoduce_sr3d
 resume_files: null
 
 world_size: 1
 node_rank: -1
 local_rank: -1
 rank: -1
+gpu: 3
 
 seed: 0
 num_epoch: 25
@@ -15,6 +16,7 @@ learning_rate: 0.0005
 lr_decay: cosine
 txt_encoder_lr_multi: 0.1
 obj_encoder_lr_multi: 1
+cot_decoder_lr_multi: 0.01
 betas: [0.9, 0.98]
 warmup_steps: 5000
 grad_norm: 5.0
@@ -55,14 +57,15 @@ model:
     txt_clf: 1
 
 dataset:
-  scan_dir: ../datasets/referit3d/scan_data
-  anno_file: ../datasets/referit3d/annotations/bert_tokenized/sr3d.jsonl
-  category_file:  ../datasets/referit3d/annotations/meta_data/scannetv2_raw_categories.json
-  cat2vec_file: ../datasets/referit3d/annotations/meta_data/cat2glove42b.json
+  is_nr3d: false
+  scan_dir: /home/abdelrem/3d_codes/vil3d_preprocessed_data/scan_data
+  anno_file: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/bert_tokenized/sr3d.jsonl
+  category_file:  /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/scannetv2_raw_categories.json
+  cat2vec_file: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/cat2glove42b.json
 
-  trn_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_train.txt
-  val_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_val.txt
-  tst_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_test.txt
+  trn_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_train.txt
+  val_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_val.txt
+  tst_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_test.txt
 
   max_txt_len: 50
   max_obj_len: 80
@@ -71,3 +74,14 @@ dataset:
   
   use_gt_view_in_target: false
 
+cot:
+  anchors: 'none'
+  cot_type: 'cross'
+  predict_lang_anchors: false
+  train_data_percent: 1.0
+  max_num_anchors: 1
+  target_aug_percentage: 0
+  distractor_aux_loss_flag: false
+  data_csv_pth: "/home/abdelrem/3d_codes/scannet_dataset/scannet/sr3d.csv"
+  tgt_mul_w: 1
+  gaussian_latent: false

@@ -6,6 +6,7 @@ world_size: 1
 node_rank: -1
 local_rank: -1
 rank: -1
+gpu: 0
 
 seed: 0
 num_epoch: 50
@@ -16,6 +17,7 @@ learning_rate: 0.0005
 lr_decay: cosine
 txt_encoder_lr_multi: 0.1
 obj_encoder_lr_multi: 1
+cot_decoder_lr_multi: 0.1
 betas: [0.9, 0.98]
 warmup_steps: 5000
 grad_norm: 5.0
@@ -68,21 +70,31 @@ model:
     distill_hiddens: 0.02
 
 dataset:
-  scan_dir: ../datasets/referit3d/scan_data
-  anno_file: ../datasets/referit3d/annotations/bert_tokenized/sr3d.jsonl
-  category_file:  ../datasets/referit3d/annotations/meta_data/scannetv2_raw_categories.json
-  # cat2vec_file: null
-  cat2vec_file: ../datasets/referit3d/annotations/meta_data/cat2glove42b.json
+  is_nr3d: false
+  scan_dir: /home/abdelrem/3d_codes/vil3d_preprocessed_data/scan_data
+  anno_file: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/bert_tokenized/sr3d.jsonl
+  category_file:  /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/scannetv2_raw_categories.json
+  cat2vec_file: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/cat2glove42b.json
 
-  trn_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_train.txt
-  val_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_val.txt
-  tst_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_test.txt
+  trn_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_train.txt
+  val_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_val.txt
+  tst_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_test.txt
 
   num_points: 1024
   max_txt_len: 50
   max_obj_len: 80
   keep_background: false
   random_rotate: true
+  repeat: 6
 
-    
-
+cot:
+  anchors: 'cot'
+  cot_type: 'cross'
+  predict_lang_anchors: false
+  train_data_percent: 0.1
+  max_num_anchors: 1
+  target_aug_percentage: 0
+  distractor_aux_loss_flag: false
+  data_csv_pth: "/home/abdelrem/3d_codes/scannet_dataset/scannet/sr3d.csv"
+  tgt_mul_w: 1
+  gaussian_latent: false

@@ -21,7 +21,7 @@ val_every_epoch: 1
 
 model:
   hidden_size: 768
-  num_obj_classes: 607
+  num_obj_classes: 608
   dropout: 0.3
   obj_encoder:
     sa_n_points: [32, 16, null]
@@ -32,16 +32,16 @@ model:
     dropout: 0.1
 
 dataset:
-  scan_dir: ../datasets/referit3d/scan_data
-  category_file:  ../datasets/referit3d/annotations/meta_data/scannetv2_raw_categories.json
+  scan_dir: /home/abdelrem/3d_codes/vil3d_preprocessed_data/scan_data
+  category_file:  /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/scannetv2_raw_categories.json
   cat2vec_file: null
   # cat2vec_file: ../datasets/referit3d/annotations/meta_data/cat2glove42b.json
   og3d_subset_file: null
   # og3d_subset_file: ../datasets/referit3d/annotations/bert_tokenized/nr3d.jsonl
 
-  trn_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_train.txt
-  val_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_val.txt
-  tst_scan_split: ../datasets/referit3d/annotations/splits/scannetv2_test.txt
+  trn_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_train.txt
+  val_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_val.txt
+  tst_scan_split: /home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/splits/scannetv2_test.txt
 
   num_points: 1024
   keep_background: false

@@ -31,12 +31,7 @@ from model.referit3d_net import ReferIt3DNet
 
 
 
-def build_gtlabel_datasets(data_cfg):
-    print("             ")
-    print("             ")
-    print("             ")
-    print("------- ", data_cfg.get('gt_scan_dir', None))
-    print("------- ", data_cfg.get('iou_replace_gt', 0))
+def build_gtlabel_datasets(data_cfg, cot_cfg):
     trn_dataset = GTLabelDataset(
         data_cfg.trn_scan_split, data_cfg.anno_file, 
         data_cfg.scan_dir, data_cfg.category_file,
@@ -46,6 +41,14 @@ def build_gtlabel_datasets(data_cfg):
         random_rotate=data_cfg.random_rotate,
         gt_scan_dir=data_cfg.get('gt_scan_dir', None),
         iou_replace_gt=data_cfg.get('iou_replace_gt', 0),
+        anchors_mode=cot_cfg.anchors,
+        max_anchors=cot_cfg.max_num_anchors, 
+        predict_lang_anchors=cot_cfg.predict_lang_anchors, 
+        target_aug_percentage=cot_cfg.target_aug_percentage, 
+        distractor_aux_loss_flag=cot_cfg.distractor_aux_loss_flag,
+        data_csv_pth=cot_cfg.data_csv_pth,
+        train_data_percent=cot_cfg.train_data_percent,
+        is_nr3d=data_cfg.is_nr3d
     )
     val_dataset = GTLabelDataset(
         data_cfg.val_scan_split, data_cfg.anno_file, 
@@ -56,10 +59,18 @@ def build_gtlabel_datasets(data_cfg):
         random_rotate=False,
         gt_scan_dir=data_cfg.get('gt_scan_dir', None),
         iou_replace_gt=data_cfg.get('iou_replace_gt', 0),
+        anchors_mode=cot_cfg.anchors,
+        max_anchors=cot_cfg.max_num_anchors, 
+        predict_lang_anchors=cot_cfg.predict_lang_anchors, 
+        target_aug_percentage=0,
+        distractor_aux_loss_flag=cot_cfg.distractor_aux_loss_flag,
+        data_csv_pth=cot_cfg.data_csv_pth,
+        train_data_percent=1.0,
+        is_nr3d=data_cfg.is_nr3d
     )
     return trn_dataset, val_dataset
 
-def build_gtpcd_datasets(data_cfg):
+def build_gtpcd_datasets(data_cfg, cot_cfg):
     trn_dataset = GTPcdDataset(
         data_cfg.trn_scan_split, data_cfg.anno_file, 
         data_cfg.scan_dir, data_cfg.category_file,
@@ -108,7 +119,8 @@ def main(opts):
 
     # Prepare model
     model_config = EasyDict(opts.model)
-    model = ReferIt3DNet(model_config, device)
+    cot_cfg = EasyDict(opts.cot)
+    model = ReferIt3DNet(model_config, device, cot_cfg)
 
     num_weights, num_trainable_weights = 0, 0
     for p in model.parameters():
@@ -136,12 +148,11 @@ def main(opts):
 
     # load data training set
     data_cfg = EasyDict(opts.dataset)
-    print("------ model_config.model_type", model_config.model_type)
     if model_config.model_type == 'gtlabel':
-        trn_dataset, val_dataset = build_gtlabel_datasets(data_cfg)
+        trn_dataset, val_dataset = build_gtlabel_datasets(data_cfg, cot_cfg)
         collate_fn = gtlabel_collate_fn
     elif model_config.model_type == 'gtpcd':
-        trn_dataset, val_dataset = build_gtpcd_datasets(data_cfg)
+        trn_dataset, val_dataset = build_gtpcd_datasets(data_cfg, cot_cfg)
         collate_fn = gtpcd_collate_fn
     LOGGER.info('train #scans %d, #data %d' % (len(trn_dataset.scan_ids), len(trn_dataset)))
     LOGGER.info('val #scans %d, #data %d' % (len(val_dataset.scan_ids), len(val_dataset)))

@@ -103,13 +103,12 @@ class ReferIt3DNet_transformer(nn.Module):
             self.parallel_language_emedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                             nn.ReLU(), nn.Dropout(self.dropout_rate))
             self.language_clf = nn.Linear(self.inner_dim, self.n_obj_classes*self.lang_out)
-            self.lang_map = nn.Sequential(nn.Linear(self.n_obj_classes, self.inner_dim),
-                                                    nn.ReLU(), nn.Dropout(self.dropout_rate))
+            # self.lang_map = nn.Sequential(nn.Linear(self.n_obj_classes, self.inner_dim), nn.ReLU(), nn.Dropout(self.dropout_rate))
             self.language_trans = nn.TransformerEncoder(torch.nn.TransformerEncoderLayer(d_model=self.n_obj_classes, nhead=7, dim_feedforward=512,
                                                                                          activation="gelu"), num_layers=1)
-            self.language_clf2 = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
-                                               nn.ReLU(), nn.Dropout(self.dropout_rate),
-                                               nn.Linear(self.inner_dim, self.n_obj_classes*self.lang_out))
+            #self.language_clf2 = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
+            #                                   nn.ReLU(), nn.Dropout(self.dropout_rate),
+            #                                   nn.Linear(self.inner_dim, self.n_obj_classes*self.lang_out))
         else:
             self.language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                           nn.ReLU(), nn.Dropout(self.dropout_rate),
@@ -419,4 +418,4 @@ class ReferIt3DNet_transformer(nn.Module):
         if self.predict_lang_anchors:
             LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, self.lang_out)[:,:,-1]
         
-        return LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS
+        return LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS

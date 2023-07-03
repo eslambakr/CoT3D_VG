@@ -4,6 +4,7 @@
 import torch
 import tqdm
 import time
+import numpy as np
 import warnings
 import os.path as osp
 import torch.nn as nn
@@ -39,6 +40,10 @@ def log_train_test_information():
         info = '{}: Total-Loss {:.4f}, Listening-Acc {:.4f}'.format(phase,
                                                                     meters[phase + '_total_loss'],
                                                                     meters[phase + '_referential_acc'])
+
+        if args.anchors == 'cot':
+            info += ', Listening-Acc-AUX: {:.4f}'.format(meters[phase + '_referential_acc_aux_tgt'])
+            info += ', Listening-Acc-AUX-Anchor: {:.4f}'.format(meters[phase + '_referential_acc-aux_anchor1'])
 
         if args.obj_cls_alpha > 0:
             info += ', Object-Clf-Acc: {:.4f}'.format(meters[phase + '_object_cls_acc'])
@@ -94,6 +99,17 @@ if __name__ == '__main__':
         model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx, class_to_idx=class_to_idx)
     else:
         assert False
+
+    # Calculate the parameters:
+    num_weights, num_trainable_weights = 0, 0
+    for p in model.parameters():
+        psize = np.prod(p.size())
+        num_weights += psize
+        if p.requires_grad:
+            num_trainable_weights += psize 
+    print("----------------------------------------")
+    print("Total num of parameters = ", num_weights, "    Number of trainable only = ", num_trainable_weights)
+    print("----------------------------------------")
 
     if gpu_num > 1:
         model = nn.DataParallel(model)

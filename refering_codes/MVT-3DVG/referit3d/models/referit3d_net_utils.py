@@ -46,6 +46,8 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
     referential_loss_mtr = AverageMeter()
     obj_loss_mtr = AverageMeter()
     ref_acc_mtr = AverageMeter()
+    ref_acc_mtr_aux_tgt = AverageMeter()
+    ref_acc_mtr_aux_anchor1 = AverageMeter()
     cls_acc_mtr = AverageMeter()
     cls_target_acc_mtr = AverageMeter()
     txt_acc_mtr = AverageMeter()
@@ -81,12 +83,13 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         batch['lang_tokens'] = lang_tokens
 
         # Forward pass
-        LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS = model(batch, epoch)
+        LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS = model(batch, epoch)
         LOSS = LOSS_target[0]
         LOSS = LOSS.mean()
 
         res = {}
         res['logits'] = LOGITS
+        res['AUX_LOGITS'] = AUX_LOGITS
         res['class_logits'] = CLASS_LOGITS
         res['lang_logits'] = LANG_LOGITS
         # Backward
@@ -104,6 +107,15 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
+        if args.anchors == 'cot':
+            predictions = torch.argmax(res['AUX_LOGITS'][:, -1], dim=1)
+            guessed_correctly = torch.mean((predictions == batch['target_pos']).double()).item()
+            ref_acc_mtr_aux_tgt.update(guessed_correctly, batch_size)
+
+            predictions = torch.argmax(res['AUX_LOGITS'][:, 0], dim=1)
+            guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+            ref_acc_mtr_aux_anchor1.update(guessed_correctly, batch_size)
+
         if args.obj_cls_alpha > 0:
             cls_b_acc, _ = cls_pred_stats(res['class_logits'], batch['class_labels'], ignore_label=pad_idx)
             cls_acc_mtr.update(cls_b_acc, batch_size)
@@ -120,6 +132,8 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
 
     metrics['train_total_loss'] = total_loss_mtr.avg
     metrics['train_referential_acc'] = ref_acc_mtr.avg
+    metrics['train_referential_acc_aux_tgt'] = ref_acc_mtr_aux_tgt.avg
+    metrics['train_referential_acc-aux_anchor1'] = ref_acc_mtr_aux_anchor1.avg
     metrics['train_object_cls_acc'] = cls_acc_mtr.avg
     metrics['train_target_cls_acc'] = cls_target_acc_mtr.avg
     metrics['train_txt_cls_acc'] = txt_acc_mtr.avg
@@ -134,6 +148,8 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
     referential_loss_mtr = AverageMeter()
     obj_loss_mtr = AverageMeter()
     ref_acc_mtr = AverageMeter()
+    ref_acc_mtr_aux_tgt = AverageMeter()
+    ref_acc_mtr_aux_anchor1 = AverageMeter()
     cls_acc_mtr = AverageMeter()
     cls_target_acc_mtr = AverageMeter()
     txt_acc_mtr = AverageMeter()
@@ -178,11 +194,12 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         batch['lang_tokens'] = lang_tokens
 
         # Forward pass
-        LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS = model(batch, epoch)
+        LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS = model(batch, epoch)
         LOSS = LOSS_target[0]
         LOSS = LOSS.mean()
         res = {}
         res['logits'] = LOGITS
+        res['AUX_LOGITS'] = AUX_LOGITS
         res['class_logits'] = CLASS_LOGITS
         res['lang_logits'] = LANG_LOGITS
 
@@ -195,6 +212,15 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         predictions = torch.argmax(res['logits'], dim=1)
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
+
+        if args.anchors == 'cot':
+            predictions = torch.argmax(res['AUX_LOGITS'][:, -1], dim=1)
+            guessed_correctly = torch.mean((predictions == batch['target_pos']).double()).item()
+            ref_acc_mtr_aux_tgt.update(guessed_correctly, batch_size)
+
+            predictions = torch.argmax(res['AUX_LOGITS'][:, 0], dim=1)
+            guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+            ref_acc_mtr_aux_anchor1.update(guessed_correctly, batch_size)
 
         if args.obj_cls_alpha > 0:
             cls_b_acc, _ = cls_pred_stats(res['class_logits'], batch['class_labels'], ignore_label=pad_idx)
@@ -212,6 +238,8 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
 
     metrics['test_total_loss'] = total_loss_mtr.avg
     metrics['test_referential_acc'] = ref_acc_mtr.avg
+    metrics['test_referential_acc_aux_tgt'] = ref_acc_mtr_aux_tgt.avg
+    metrics['test_referential_acc-aux_anchor1'] = ref_acc_mtr_aux_anchor1.avg
     metrics['test_object_cls_acc'] = cls_acc_mtr.avg
     metrics['test_target_cls_acc'] = cls_target_acc_mtr.avg
     metrics['test_txt_cls_acc'] = txt_acc_mtr.avg

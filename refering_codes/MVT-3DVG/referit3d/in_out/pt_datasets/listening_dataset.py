@@ -253,7 +253,7 @@ class ListeningDataset(Dataset):
 
         res['context_size'] = len(samples)
 
-        if (self.pc_transforms is not None) and (flipcoin(percent=20)) and self.is_train:
+        if (self.pc_transforms is not None) and self.is_train:  # and (flipcoin(percent=20))
             for sample in samples:
                 sample = torch.from_numpy(sample)
                 sample = self.pc_transforms(sample)
@@ -342,10 +342,10 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
     pc_transforms = None
     if pc_augment:
         pc_transforms = T.Compose([
-            RandomSymmetry(axis=[True, True, False], p=0.05),
-            RandomNoise(sigma=0.01, clip=0.05, p=0.05),
-            Random3AxisRotation(rot_x=5, rot_y=5, rot_z=5, p=0.05),
-            ChromaticTranslation(p=0.05),
+            #RandomSymmetry(axis=[True, True, False], p=0.05),
+            RandomNoise(sigma=0.01, clip=0.05, p=0.0),
+            #Random3AxisRotation(rot_x=5, rot_y=5, rot_z=5, p=0.05),
+            #ChromaticTranslation(p=0.05),
         ])
 
     object_transformation = None

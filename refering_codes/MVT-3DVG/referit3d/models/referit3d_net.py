@@ -76,7 +76,7 @@ class ReferIt3DNet_transformer(nn.Module):
             if self.is_nr:
                 self.lang_out = self.max_num_anchors + 1
             else:
-                self.lang_out = 3 
+                self.lang_out = 2 
             self.n_obj_classes = n_obj_classes + 1  # +1 to include the no_obj class
         else:
             self.lang_out = 1
@@ -246,6 +246,7 @@ class ReferIt3DNet_transformer(nn.Module):
                     referential_loss += self.logit_loss_aux(AUX_LOGITS.reshape(-1, AUX_LOGITS.shape[2]), trg_pass_reshaped)
         else:
             referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
+            trg_pass = None
         
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
         

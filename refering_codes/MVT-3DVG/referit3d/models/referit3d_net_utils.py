@@ -55,9 +55,10 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
     # Set the model in training mode
     model.train()
     np.random.seed()  # call this to change the sampling of the point-clouds
-    extras = None
     if args.anchors != 'none':
         extras = ['anchors_pos']
+    else:
+        extras = []
     
     if args.predict_lang_anchors:
         if type(extras) == list:
@@ -162,9 +163,10 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
     else:
         np.random.seed(args.random_seed)
 
-    extras = None
     if args.anchors != 'none':
         extras = ['anchors_pos']
+    else:
+        extras = []
 
     if args.predict_lang_anchors:
         if type(extras) == list:
@@ -258,9 +260,10 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
     res['context_size'] = list()
     res['guessed_correctly_among_true_class'] = list()
 
-    extras = None
     if args.anchors != 'none':
         extras = ['anchors_pos']
+    else:
+        extras = []
 
     if args.predict_lang_anchors:
         if type(extras) == list:

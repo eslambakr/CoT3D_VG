@@ -86,6 +86,7 @@ class ListeningDataset(Dataset):
         # Get Anchors
         anchors = None
         path = None
+        self.anchors_len = 0
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
             self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
             if is_nr3d:
@@ -110,10 +111,11 @@ class ListeningDataset(Dataset):
             # Handle the case where we set max_anchors number to low number (< true path) --> Trim the path:
             if len(self.anchors_ids) > self.max_anchors:
                 self.anchors_ids = self.anchors_ids[:self.max_anchors]
-                # TODO: Eslam: but here the path not matching the anchors. Should I exclude the *?
-                trimmed_path = path[:self.max_anchors]  # Get max_num of anchor
-                trimmed_path.append(path[-1])  # Adding the target 
-                path = trimmed_path
+                if is_nr3d:
+                    # TODO: Eslam: but here the path not matching the anchors. Should I exclude the *?
+                    trimmed_path = path[:self.max_anchors]  # Get max_num of anchor
+                    trimmed_path.append(path[-1])  # Adding the target 
+                    path = trimmed_path
                 anchors = anchors[:self.max_anchors]
 
             self.anchors_len = len(anchors)+1 if len(anchors) < self.max_anchors else len(anchors)  # +1 as we will add only one empty anchor later
@@ -326,7 +328,7 @@ class ListeningDataset(Dataset):
 
 
 def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, transform_obj=True):
-    max_anchors = args.max_num_anchors if 'nr' in args.referit3D_file else 2
+    max_anchors = args.max_num_anchors
     print("max_anchors = ", max_anchors)
     shuffle_mode = args.visaug_shuffle_mode
     pc_augment = args.visaug_pc_augment
@@ -367,10 +369,12 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                 print("d_set after: ", len(d_set))
             if args.train_data_percent < 1:
                 # Filter the samples which don't contain the max_num_anchors
-                d_set = d_set[d_set['num_anchors'] <= max_anchors]
-                if args.target_aug_percentage and (args.train_data_percent==0.1) and (max_anchors==1):
-                    unique_rel_df = pd.read_csv("/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_unique_rel_anchor_data.csv")
-                    d_set = pd.merge(d_set, unique_rel_df, how='inner', on=['utterance'], suffixes=('', '_y'))
+                if 'nr' in args.referit3D_file:
+                    d_set = d_set[d_set['num_anchors'] <= max_anchors]
+                    if args.target_aug_percentage and (args.train_data_percent==0.1) and (max_anchors==1):
+                        unique_rel_df = pd.read_csv("/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_unique_rel_anchor_data.csv")
+                        d_set = pd.merge(d_set, unique_rel_df, how='inner', on=['utterance'], suffixes=('', '_y'))
+                
                 extend = org_training_len/len(d_set)
                 print("-------- org_training_len = ", org_training_len, "   ", len(d_set))
             d_set = d_set.sample(frac=args.train_data_percent*extend)

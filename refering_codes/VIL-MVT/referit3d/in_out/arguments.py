@@ -87,7 +87,12 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--target_aug_percentage', type=int, default=0,  help="swap target with anchor in case of 1 anchor only exist")
     parser.add_argument('--gaussian_latent', type=str2bool, default=False,  help="learning gaussian shared latent representation before heads")
     parser.add_argument('--distractor_aux_loss_flag', type=str2bool, default=False,  help="Add head to predict which objs are distractors")
-    parser.add_argument('--VIL_flag', type=str2bool, default=False,  help="Activate VIL only not MVT")
+    parser.add_argument('--vil_flag', type=str2bool, default=False,  help="Activate VIL only not MVT")
+    parser.add_argument('--train_objcls_alone_flag', type=str2bool, default=False, 
+                        help="If activated this means only the P++ will be trained. We have done this to mimic VIL.")
+    parser.add_argument('--freezed_pointnet_weights', type=str, default=None, 
+                        help="If set this means that the P++ will be frozen and and pretrained wieghts will be loaded. \
+                        This trick is proposed by VIL.")
 
     #
     # Model arguments

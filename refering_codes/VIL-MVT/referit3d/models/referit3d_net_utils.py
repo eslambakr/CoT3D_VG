@@ -66,6 +66,12 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         else:
             extras = ['anchor_classes']
 
+    if args.vil_flag:
+        if type(extras) == list:
+            extras += ['obj_locs', 'txt_masks', 'obj_masks']
+        else:
+            extras = ['obj_locs', 'txt_masks', 'obj_masks']
+
     batch_keys = make_batch_keys(args, extras)
     for batch in tqdm.tqdm(data_loader):
         # Move data to gpu
@@ -84,6 +90,31 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         batch['lang_tokens'] = lang_tokens
 
         # Forward pass
+        if args.train_objcls_alone_flag:
+            LOSS, CLASS_LOGITS, LANG_LOGITS = model(batch, epoch)
+            LOSS, target = LOSS.mean(), batch['target_pos']
+            res = {}
+            res['class_logits'] = CLASS_LOGITS
+            res['lang_logits'] = LANG_LOGITS
+            # Backward
+            optimizer.zero_grad()
+            LOSS.backward()
+            optimizer.step()
+            batch_size = target.size(0)  # B x N_Objects
+            total_loss_mtr.update(LOSS.item(), batch_size)
+            # Measure Acc for Obj Cls:
+            cls_b_acc, _ = cls_pred_stats(res['class_logits'], batch['class_labels'], ignore_label=pad_idx)
+            cls_acc_mtr.update(cls_b_acc, batch_size)
+            # Eslam: Measure the classification Accuracy for the target only:
+            cls_target_b_acc, _ = cls_target_pred_stats(res['class_logits'], batch['class_labels'],
+                                                        batch['target_pos'],  ignore_label=pad_idx)
+            cls_target_acc_mtr.update(cls_target_b_acc, batch_size)
+            # Measure Acc for Lang:
+            batch_guess = torch.argmax(res['lang_logits'], -1)
+            cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
+            txt_acc_mtr.update(cls_b_acc, batch_size)
+            continue
+        
         LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS = model(batch, epoch)
         LOSS = LOSS_target[0]
         LOSS = LOSS.mean()
@@ -131,13 +162,19 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
             cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
             txt_acc_mtr.update(cls_b_acc, batch_size)
 
-    metrics['train_total_loss'] = total_loss_mtr.avg
-    metrics['train_referential_acc'] = ref_acc_mtr.avg
-    metrics['train_referential_acc_aux_tgt'] = ref_acc_mtr_aux_tgt.avg
-    metrics['train_referential_acc-aux_anchor1'] = ref_acc_mtr_aux_anchor1.avg
-    metrics['train_object_cls_acc'] = cls_acc_mtr.avg
-    metrics['train_target_cls_acc'] = cls_target_acc_mtr.avg
-    metrics['train_txt_cls_acc'] = txt_acc_mtr.avg
+    if args.train_objcls_alone_flag:
+        metrics['train_total_loss'] = total_loss_mtr.avg
+        metrics['train_object_cls_acc'] = cls_acc_mtr.avg
+        metrics['train_target_cls_acc'] = cls_target_acc_mtr.avg
+        metrics['train_txt_cls_acc'] = txt_acc_mtr.avg
+    else:
+        metrics['train_total_loss'] = total_loss_mtr.avg
+        metrics['train_referential_acc'] = ref_acc_mtr.avg
+        metrics['train_referential_acc_aux_tgt'] = ref_acc_mtr_aux_tgt.avg
+        metrics['train_referential_acc-aux_anchor1'] = ref_acc_mtr_aux_anchor1.avg
+        metrics['train_object_cls_acc'] = cls_acc_mtr.avg
+        metrics['train_target_cls_acc'] = cls_target_acc_mtr.avg
+        metrics['train_txt_cls_acc'] = txt_acc_mtr.avg
     return metrics
 
 
@@ -174,6 +211,12 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         else:
             extras = ['anchor_classes']
 
+    if args.vil_flag:
+        if type(extras) == list:
+            extras += ['obj_locs', 'txt_masks', 'obj_masks']
+        else:
+            extras = ['obj_locs', 'txt_masks', 'obj_masks']
+
     batch_keys = make_batch_keys(args, extras)
 
     for batch in tqdm.tqdm(data_loader):
@@ -196,6 +239,26 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         batch['lang_tokens'] = lang_tokens
 
         # Forward pass
+        if args.train_objcls_alone_flag:
+            LOSS, CLASS_LOGITS, LANG_LOGITS = model(batch, epoch)
+            LOSS, target = LOSS.mean(), batch['target_pos']
+            res = {}
+            res['class_logits'] = CLASS_LOGITS
+            res['lang_logits'] = LANG_LOGITS
+            batch_size = target.size(0)  # B x N_Objects
+            total_loss_mtr.update(LOSS.item(), batch_size)
+            cls_b_acc, _ = cls_pred_stats(res['class_logits'], batch['class_labels'], ignore_label=pad_idx)
+            cls_acc_mtr.update(cls_b_acc, batch_size)
+            # Eslam: Measure the classification Accuracy for the target only
+            cls_target_b_acc, _ = cls_target_pred_stats(res['class_logits'], batch['class_labels'],
+                                                        batch['target_pos'],  ignore_label=pad_idx)
+            cls_target_acc_mtr.update(cls_target_b_acc, batch_size)
+            # Measure Acc for Lang:
+            batch_guess = torch.argmax(res['lang_logits'], -1)
+            cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
+            txt_acc_mtr.update(cls_b_acc, batch_size)
+            continue
+        
         LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS = model(batch, epoch)
         LOSS = LOSS_target[0]
         LOSS = LOSS.mean()
@@ -238,13 +301,20 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
             cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
             txt_acc_mtr.update(cls_b_acc, batch_size)
 
-    metrics['test_total_loss'] = total_loss_mtr.avg
-    metrics['test_referential_acc'] = ref_acc_mtr.avg
-    metrics['test_referential_acc_aux_tgt'] = ref_acc_mtr_aux_tgt.avg
-    metrics['test_referential_acc-aux_anchor1'] = ref_acc_mtr_aux_anchor1.avg
-    metrics['test_object_cls_acc'] = cls_acc_mtr.avg
-    metrics['test_target_cls_acc'] = cls_target_acc_mtr.avg
-    metrics['test_txt_cls_acc'] = txt_acc_mtr.avg
+    if args.train_objcls_alone_flag:
+        metrics['test_total_loss'] = total_loss_mtr.avg
+        metrics['test_object_cls_acc'] = cls_acc_mtr.avg
+        metrics['test_target_cls_acc'] = cls_target_acc_mtr.avg
+        metrics['test_txt_cls_acc'] = txt_acc_mtr.avg
+        metrics['test_referential_acc'] = cls_acc_mtr.avg
+    else:
+        metrics['test_total_loss'] = total_loss_mtr.avg
+        metrics['test_referential_acc'] = ref_acc_mtr.avg
+        metrics['test_referential_acc_aux_tgt'] = ref_acc_mtr_aux_tgt.avg
+        metrics['test_referential_acc-aux_anchor1'] = ref_acc_mtr_aux_anchor1.avg
+        metrics['test_object_cls_acc'] = cls_acc_mtr.avg
+        metrics['test_target_cls_acc'] = cls_target_acc_mtr.avg
+        metrics['test_txt_cls_acc'] = txt_acc_mtr.avg
     return metrics
 
 
@@ -270,6 +340,13 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
             extras += ['anchor_classes']
         else:
             extras = ['anchor_classes']
+    
+    if args.vil_flag:
+        if type(extras) == list:
+            extras += ['obj_locs', 'txt_masks', 'obj_masks']
+        else:
+            extras = ['obj_locs', 'txt_masks', 'obj_masks']
+            
     extras += ['context_size', 'target_class_mask']
 
     batch_keys = make_batch_keys(args, extras=extras)

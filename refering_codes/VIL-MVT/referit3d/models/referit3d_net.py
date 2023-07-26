@@ -19,7 +19,17 @@ from transformers import BertTokenizer, BertModel, BertConfig
 from referit3d.models import MLP
 from referit3d.models.CoT.seq_seq_transformer import CoTTransformer
 from referit3d.models.CoT.lstm_w_att import DecoderWithAttention
+from referit3d.models.vil.cmt_module import CMT
 import time
+
+
+def freeze_module(m):
+    '''Freeze BatchNorm Layers'''
+    for layer in m.modules():
+        if isinstance(layer, nn.BatchNorm2d):
+            layer.eval()
+    for p in m.parameters():
+        p.requires_grad = False
 
 
 class ReferIt3DNet_transformer(nn.Module):
@@ -58,6 +68,9 @@ class ReferIt3DNet_transformer(nn.Module):
         self.lang_filter_objs = args.lang_filter_objs
         self.gaussian_latent = args.gaussian_latent
         self.distractor_aux_loss_flag = args.distractor_aux_loss_flag
+        self.vil_flag = args.vil_flag
+        self.train_objcls_alone_flag = args.train_objcls_alone_flag
+        self.freezed_pointnet_weights = args.freezed_pointnet_weights
         self.class_to_idx = class_to_idx
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.cls_names = np.array(list(self.idx_to_class.values()))
@@ -82,23 +95,37 @@ class ReferIt3DNet_transformer(nn.Module):
             self.lang_out = 1
             self.n_obj_classes = n_obj_classes
 
+        # Object Classifier part:
         self.object_encoder = PointNetPP(sa_n_points=[32, 16, None],
                                          sa_n_samples=[[32], [32], [None]],
                                          sa_radii=[[0.2], [0.4], [None]],
                                          sa_mlps=[[[3, 64, 64, 128]],
                                                   [[128, 128, 128, 256]],
                                                   [[256, 256, self.object_dim, self.object_dim]]])
+        self.obj_feature_mapping = nn.Sequential(
+            nn.Linear(self.object_dim, self.inner_dim),
+            nn.LayerNorm(self.inner_dim),
+        )
+        self.box_feature_mapping = nn.Sequential(
+            nn.Linear(4, self.inner_dim),
+            nn.LayerNorm(self.inner_dim),
+        )
 
+        if self.freezed_pointnet_weights != 'none':
+            freeze_module(self.object_encoder)
+            freeze_module(self.obj_feature_mapping)
+            freeze_module(self.box_feature_mapping)
+
+        if not self.label_lang_sup:
+            self.obj_clf = MLP(self.inner_dim, [self.object_dim, self.object_dim, self.n_obj_classes],
+                               dropout_rate=self.dropout_rate)
+
+        self.class_logits_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
+
+        # Language Classifier part:
+        self.class_name_tokens = class_name_tokens
         self.language_encoder = BertModel.from_pretrained(self.bert_pretrain_path)
         self.language_encoder.encoder.layer = BertModel(BertConfig()).encoder.layer[:self.encoder_layer_num]
-
-        self.refer_encoder = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim,
-                                                                                    nhead=self.decoder_nhead_num,
-                                                                                    dim_feedforward=2048,
-                                                                                    activation="gelu"),
-                                                   num_layers=self.decoder_layer_num)
-
-        # Classifier heads
         if self.is_nr:
             self.parallel_language_emedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                             nn.ReLU(), nn.Dropout(self.dropout_rate))
@@ -113,20 +140,25 @@ class ReferIt3DNet_transformer(nn.Module):
             self.language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                           nn.ReLU(), nn.Dropout(self.dropout_rate),
                                           nn.Linear(self.inner_dim, self.n_obj_classes*self.lang_out))
+        self.lang_logits_loss = nn.CrossEntropyLoss()
+        self.lang_logits_loss_aux = nn.CrossEntropyLoss()
 
-        if not self.label_lang_sup:
-            self.obj_clf = MLP(self.inner_dim, [self.object_dim, self.object_dim, self.n_obj_classes],
-                               dropout_rate=self.dropout_rate)
+        if self.train_objcls_alone_flag:
+            return
 
-        self.obj_feature_mapping = nn.Sequential(
-            nn.Linear(self.object_dim, self.inner_dim),
-            nn.LayerNorm(self.inner_dim),
-        )
-
-        self.box_feature_mapping = nn.Sequential(
-            nn.Linear(4, self.inner_dim),
-            nn.LayerNorm(self.inner_dim),
-        )
+        if self.vil_flag:
+            # VIL Fusion-Transformer:
+            mm_config = {'type': 'cmt', 'spatial_dec': True, 'spatial_multihead': True, 'spatial_dim': 5, 'spatial_dist_norm': True,
+                         'spatial_attn_fusion': 'cond', 'num_layers': 4, 'obj_loc_encoding': 'same_all', 'pairwise_rel_type': 'center',
+                         'hidden_size': 768, 'num_attention_heads': 12, 'dim_loc': 6}
+            self.refer_encoder = CMT(mm_config)
+        else:
+            # MVT Fusion-Transformer:
+            self.refer_encoder = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim,
+                                                                                        nhead=self.decoder_nhead_num,
+                                                                                        dim_feedforward=2048,
+                                                                                        activation="gelu"),
+                                                    num_layers=self.decoder_layer_num)
 
         if self.gaussian_latent:
             self.inner_dim = int(self.inner_dim / 2)
@@ -164,13 +196,8 @@ class ReferIt3DNet_transformer(nn.Module):
         if self.gaussian_latent:
             self.inner_dim = int(self.inner_dim * 2)
 
-        self.class_name_tokens = class_name_tokens
-
         self.logit_loss = nn.CrossEntropyLoss()
         self.logit_loss_aux = nn.CrossEntropyLoss()
-        self.lang_logits_loss = nn.CrossEntropyLoss()
-        self.lang_logits_loss_aux = nn.CrossEntropyLoss()
-        self.class_logits_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
 
     @torch.no_grad()
     def aug_input(self, input_points, box_infos):
@@ -275,12 +302,16 @@ class ReferIt3DNet_transformer(nn.Module):
             return (total_loss, batch['target_pos'])
         else:
             return (total_loss, trg_pass[:, -1])
-        
 
     def forward(self, batch: dict, epoch=None):
         # batch['class_labels']: GT class of each obj
         # batch['target_class']：GT class of target obj
         # batch['target_pos']: GT id
+
+        if self.freezed_pointnet_weights != 'none':
+            freeze_module(self.object_encoder)
+            freeze_module(self.obj_feature_mapping)
+            freeze_module(self.box_feature_mapping)
 
         if (epoch > 10) and self.lang_filter_objs:
             self.lang_filter_objs_activated = True
@@ -290,18 +321,33 @@ class ReferIt3DNet_transformer(nn.Module):
         self.device = self.obj_feature_mapping[0].weight.device
 
         ## rotation augmentation and multi_view generation
-        obj_points, boxs = self.aug_input(batch['objects'], batch['box_info'])  # [128, 52, 1024, 6], [128, 4, 52, 4]
+        if self.vil_flag:
+            obj_points = batch['objects'].float().to(self.device)  # [128, 52, 1024, 6]
+            boxs = batch['box_info'].float().to(self.device)
+        else:
+            obj_points, boxs = self.aug_input(batch['objects'], batch['box_info'])  # [128, 52, 1024, 6], [128, 4, 52, 4]
         B, N, P = obj_points.shape[:3]
 
         ## obj_encoding
         #  torch.Size([128, 52, 1024, 6]) --> torch.Size([128, 52, 768])
         objects_features = get_siamese_features(self.object_encoder, obj_points, aggregator=torch.stack)
+        if self.freezed_pointnet_weights != 'none':
+            objects_features = objects_features.detach()
 
         ## obj_encoding
         obj_feats = self.obj_feature_mapping(objects_features)  # torch.Size([128, 52, 768])
+        if self.freezed_pointnet_weights != 'none':
+            obj_feats = obj_feats.detach()
+
         # [128, 4, 52, 4] --> [128, 4, 52, 768]
         box_infos = self.box_feature_mapping(boxs)
-        obj_infos = obj_feats[:, None].repeat(1, self.view_number, 1, 1) + box_infos
+        if self.freezed_pointnet_weights != 'none':
+            box_infos = box_infos.detach()
+        
+        if self.vil_flag:
+            obj_infos = obj_feats + box_infos  # torch.Size([128, 52, 768])
+        else:
+            obj_infos = obj_feats[:, None].repeat(1, self.view_number, 1, 1) + box_infos
 
         # <LOSS>: obj_cls
         if self.label_lang_sup:
@@ -327,24 +373,40 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             AUX_LANG_LOGITS = None
             LANG_LOGITS = self.language_clf(lang_infos[:, 0])  # [128, 607]  # [B, num_cls*trg_seq_length]
+        
+        if self.train_objcls_alone_flag:
+            LOSS = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
+            LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, self.lang_out).permute(0, 2, 1).reshape(-1, self.n_obj_classes)  # [N*trg_seq_length, num_cls]
+            lang_tgt = torch.cat((batch['anchor_classes'], batch['target_class'].unsqueeze(-1)), dim=-1).reshape(-1).long()  # [N*trg_seq_length]
+            lang_clf_loss = self.lang_logits_loss(LANG_LOGITS, lang_tgt)
+            LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, self.lang_out)[:,:,-1]
+            return LOSS+lang_clf_loss, CLASS_LOGITS, LANG_LOGITS
 
         ## multi-modal_fusion
-        cat_infos = obj_infos.reshape(B * self.view_number, -1, self.inner_dim)  # [512, 52, 768]
-        mem_infos = lang_infos[:, None].repeat(1, self.view_number, 1, 1).reshape(B * self.view_number,
-                                                                                  -1, self.inner_dim)  # [512, 20, 768]
-        out_feats = self.refer_encoder(cat_infos.transpose(0, 1),
-                                       mem_infos.transpose(0, 1)).transpose(0, 1).reshape(B, self.view_number, -1,
-                                                                                          self.inner_dim)  # [128, 4, 52, 768]
-
-        ## view_aggregation
-        refer_feat = out_feats
-        if self.aggregate_type == 'avg':
-            agg_feats = (refer_feat / self.view_number).sum(dim=1)
-        elif self.aggregate_type == 'avgmax':
-            agg_feats = (refer_feat / self.view_number).sum(dim=1) + refer_feat.max(dim=1).values
+        if self.vil_flag:
+            # VIL Fusion-Transformer:
+            # TODO: Eslam should fix the dummy masks to be real masks
+            batch['txt_masks'] = torch.ones((lang_infos.shape[0], lang_infos.shape[1]), dtype=torch.bool, device=lang_infos.device)
+            out_feats = self.refer_encoder(lang_infos, batch['txt_masks'], 
+                                         obj_infos, batch['obj_locs'].float(), batch['obj_masks'],
+                                         output_attentions=True, output_hidden_states=True,)  # [128, L, 768])
+            agg_feats = out_feats['obj_embeds']
         else:
-            agg_feats = refer_feat.max(dim=1).values
-        # print("agg_feats: ", agg_feats.shape)  # [128, 52, 768]
+            # MVT Fusion-Transformer:
+            cat_infos = obj_infos.reshape(B * self.view_number, -1, self.inner_dim)  # [512, 52, 768]
+            mem_infos = lang_infos[:, None].repeat(1, self.view_number, 1, 1).reshape(B * self.view_number, -1, self.inner_dim)  # [512, 20, 768]
+            out_feats = self.refer_encoder(cat_infos.transpose(0, 1),
+                                        mem_infos.transpose(0, 1)).transpose(0, 1).reshape(B, self.view_number, -1,
+                                                                                            self.inner_dim)  # [128, 4, 52, 768]
+            ## view_aggregation
+            refer_feat = out_feats
+            if self.aggregate_type == 'avg':
+                agg_feats = (refer_feat / self.view_number).sum(dim=1)
+            elif self.aggregate_type == 'avgmax':
+                agg_feats = (refer_feat / self.view_number).sum(dim=1) + refer_feat.max(dim=1).values
+            else:
+                agg_feats = refer_feat.max(dim=1).values
+            # print("agg_feats: ", agg_feats.shape)  # [128, 52, 768]
 
         if self.lang_filter_objs_activated:
             # Get lang predictions:

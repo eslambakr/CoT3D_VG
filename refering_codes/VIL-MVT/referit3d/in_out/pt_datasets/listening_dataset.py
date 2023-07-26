@@ -25,7 +25,7 @@ class ListeningDataset(Dataset):
                  class_to_idx=None, object_transformation=None, visualization=False,
                  anchors_mode="cot", max_anchors=2, predict_lang_anchors=False, 
                  shuffle_objects=None, pc_transforms=None, textaug_paraphrase_percentage=None, shuffle_objects_percentage=None,
-                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False):
+                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False, vil_flag=False):
 
         self.references = references
         self.scans = scans
@@ -45,6 +45,7 @@ class ListeningDataset(Dataset):
         self.target_aug_percentage = target_aug_percentage
         self.distractor_aux_loss_flag = distractor_aux_loss_flag
         self.is_train = is_train
+        self.vil_flag = vil_flag
         with open('/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/unique_rel_map_dict_opposite.json') as f:
             self.opposite_dict = json.load(f)
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
@@ -202,7 +203,8 @@ class ListeningDataset(Dataset):
         res['class_labels'] = instance_labels_of_context(context, self.max_context_size, self.class_to_idx)
         # sample point/color for them
         context_len = len(context)
-        if (self.shuffle_objects is not None) and (flipcoin(percent=self.shuffle_objects_percentage)) and self.is_train:  # Shuffling objects optionally
+        # Shuffling objects optionally
+        if (self.shuffle_objects is not None) and (flipcoin(percent=self.shuffle_objects_percentage)) and self.is_train:
             # Iterate over object labels
             samples = []
             for k, object_label in enumerate(res['class_labels'][:context_len]):
@@ -307,6 +309,26 @@ class ListeningDataset(Dataset):
         res['is_nr3d'] = is_nr3d
         res['box_info'] = box_info
         res['box_corners'] = box_corners
+
+        if self.vil_flag:
+            obj_locs = np.zeros((self.max_context_size, 6))
+            obj_locs[:len(context),0] = [o.get_bbox().cx for o in context]
+            obj_locs[:len(context),1] = [o.get_bbox().cy for o in context]
+            obj_locs[:len(context),2] = [o.get_bbox().cz for o in context]
+            obj_locs[:len(context),3] = [o.get_bbox().lx for o in context]
+            obj_locs[:len(context),4] = [o.get_bbox().ly for o in context]
+            obj_locs[:len(context),5] = [o.get_bbox().lz for o in context]
+
+            # pad with non-existing anchor
+            if self.anchors_mode != 'none' or self.predict_lang_anchors:
+                if len(anchors) < self.anchors_len:
+                    obj_locs[anchors_pos[-1]] = np.zeros((1, 6))
+            res['obj_locs'] = obj_locs
+
+            # Create masks:
+            # TODO: Eslam should fix the dummy masks to be real masks
+            res['txt_masks'] = np.full((self.max_seq_len), True)
+            res['obj_masks'] = np.full((self.max_context_size), True)
 
         if self.visualization:
             distrators_pos = np.zeros((50))  # 6 is the maximum context size we used in dataset collection
@@ -427,7 +449,8 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    textaug_paraphrase_percentage=args.textaug_paraphrase_percentage,
                                    target_aug_percentage=args.target_aug_percentage,
                                    is_train=split=='train',
-                                   distractor_aux_loss_flag=args.distractor_aux_loss_flag)
+                                   distractor_aux_loss_flag=args.distractor_aux_loss_flag,
+                                   vil_flag=args.vil_flag)
 
         seed = None
         if split == 'test':

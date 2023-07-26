@@ -57,6 +57,27 @@ def log_train_test_information():
     logger.info('Best so far {:.3f} (@epoch {})'.format(best_test_acc, best_test_epoch))
 
 
+def log_train_test_information_objcls_alone():
+    """Helper logging function.
+    Note uses "global" variables defined below.
+    """
+    logger.info('Epoch:{}'.format(epoch))
+    for phase in ['train', 'test']:
+        if phase == 'train':
+            meters = train_meters
+        else:
+            meters = test_meters
+
+        info = '{}: Total-Loss {:.4f}'.format(phase, meters[phase + '_total_loss'])
+        info += ', Object-Clf-Acc: {:.4f}'.format(meters[phase + '_object_cls_acc'])
+        info += ', Target-Clf-Acc: {:.4f}'.format(meters[phase + '_target_cls_acc'])
+        info += ', Text-Clf-Acc: {:.4f}'.format(meters[phase + '_txt_cls_acc'])
+
+        logger.info(info)
+        logger.info('{}: Epoch-time {:.3f}'.format(phase, timings[phase]))
+    logger.info('Best so far {:.3f} (@epoch {})'.format(best_test_acc, best_test_epoch))
+
+
 if __name__ == '__main__':
     # Parse arguments
     args = parse_arguments()
@@ -131,21 +152,30 @@ if __name__ == '__main__':
         if not args.label_lang_sup:
             param_list.append({'params': model.module.obj_clf.parameters(), 'lr': args.init_lr})
     else:
-        param_list = [
-            {'params': model.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
-            {'params': model.refer_encoder.parameters(), 'lr': args.init_lr * 0.1},
-            {'params': model.object_encoder.parameters(), 'lr': args.init_lr},
-            {'params': model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
-            {'params': model.box_feature_mapping.parameters(), 'lr': args.init_lr},
-            {'params': model.language_clf.parameters(), 'lr': args.init_lr},
-            {'params': model.object_language_clf.parameters(), 'lr': args.init_lr*0.1},
-        ]
-        if not args.label_lang_sup:
-            param_list.append({'params': model.obj_clf.parameters(), 'lr': args.init_lr})
-        if args.anchors == 'cot':
-            param_list.append({'params': model.parallel_embedding.parameters(), 'lr': args.init_lr})
-            param_list.append({'params': model.object_language_clf_parallel.parameters(), 'lr': args.init_lr})
-            param_list.append({'params': model.fc_out.parameters(), 'lr': args.init_lr})
+        if args.train_objcls_alone_flag:
+            param_list = [
+                {'params': model.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
+                {'params': model.object_encoder.parameters(), 'lr': args.init_lr},
+                {'params': model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
+                {'params': model.box_feature_mapping.parameters(), 'lr': args.init_lr},
+                {'params': model.language_clf.parameters(), 'lr': args.init_lr},
+            ]
+        else:
+            param_list = [
+                {'params': model.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
+                {'params': model.refer_encoder.parameters(), 'lr': args.init_lr * 0.1},
+                {'params': model.object_encoder.parameters(), 'lr': args.init_lr},
+                {'params': model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
+                {'params': model.box_feature_mapping.parameters(), 'lr': args.init_lr},
+                {'params': model.language_clf.parameters(), 'lr': args.init_lr},
+                {'params': model.object_language_clf.parameters(), 'lr': args.init_lr*0.1},
+            ]
+            if not args.label_lang_sup:
+                param_list.append({'params': model.obj_clf.parameters(), 'lr': args.init_lr})
+            if args.anchors == 'cot':
+                param_list.append({'params': model.parallel_embedding.parameters(), 'lr': args.init_lr})
+                param_list.append({'params': model.object_language_clf_parallel.parameters(), 'lr': args.init_lr})
+                param_list.append({'params': model.fc_out.parameters(), 'lr': args.init_lr})
 
     optimizer = optim.Adam(param_list, lr=args.init_lr)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [40, 50, 60, 70, 80, 90], gamma=0.65)
@@ -155,6 +185,12 @@ if __name__ == '__main__':
     best_test_epoch = -1
     last_test_acc = -1
     last_test_epoch = -1
+
+    if args.freezed_pointnet_weights != 'none':
+        print("P++ is freezed!!!!!")
+        print("Start Loading the P++ pre-trained weights .........")
+        model.load_state_dict(torch.load(args.freezed_pointnet_weights)['model'], strict=False)
+        print("---- Loading the P++ pre-trained weights finished ----")
 
     if args.resume_path:
         warnings.warn('Resuming assumes that the BEST per-val model is loaded!')
@@ -227,7 +263,10 @@ if __name__ == '__main__':
                 else:
                     logger.info(colored('Test accuracy, did not improve @epoch {}'.format(epoch), 'red'))
 
-                log_train_test_information()
+                if args.train_objcls_alone_flag:
+                    log_train_test_information_objcls_alone()
+                else:
+                    log_train_test_information()
                 train_meters.update(test_meters)
                 train_vis.log_scalars({k: v for k, v in train_meters.items() if '_acc' in k}, step=epoch,
                                       main_tag='acc')

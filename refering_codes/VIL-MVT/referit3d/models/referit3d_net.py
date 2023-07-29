@@ -71,6 +71,7 @@ class ReferIt3DNet_transformer(nn.Module):
         self.vil_flag = args.vil_flag
         self.train_objcls_alone_flag = args.train_objcls_alone_flag
         self.freezed_pointnet_weights = args.freezed_pointnet_weights
+        self.obj_cls_post = args.obj_cls_post
         self.class_to_idx = class_to_idx
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.cls_names = np.array(list(self.idx_to_class.values()))
@@ -150,7 +151,7 @@ class ReferIt3DNet_transformer(nn.Module):
             # VIL Fusion-Transformer:
             mm_config = {'type': 'cmt', 'spatial_dec': True, 'spatial_multihead': True, 'spatial_dim': 5, 'spatial_dist_norm': True,
                          'spatial_attn_fusion': 'cond', 'num_layers': 4, 'obj_loc_encoding': 'same_all', 'pairwise_rel_type': 'center',
-                         'hidden_size': 768, 'num_attention_heads': 12, 'dim_loc': 6}
+                         'hidden_size': self.inner_dim, 'num_attention_heads': 12, 'dim_loc': 6}
             self.refer_encoder = CMT(mm_config)
         else:
             # MVT Fusion-Transformer:
@@ -163,6 +164,10 @@ class ReferIt3DNet_transformer(nn.Module):
         if self.gaussian_latent:
             self.inner_dim = int(self.inner_dim / 2)
 
+        if self.obj_cls_post:
+            self.obj_clf_post = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim//2), nn.ReLU(), nn.LayerNorm(self.inner_dim//2, eps=1e-12), 
+                                              nn.Dropout(self.dropout_rate), nn.Linear(self.inner_dim//2, self.n_obj_classes))
+            
         if self.anchors_mode == 'cot':
             if self.cot_type == "cross":
                 self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
@@ -239,7 +244,8 @@ class ReferIt3DNet_transformer(nn.Module):
         boxs = torch.stack(boxs, dim=1)
         return input_points, boxs
 
-    def compute_loss(self, batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS=None, AUX_LANG_LOGITS=None, distractor_aux_logits=None):
+    def compute_loss(self, batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS=None, AUX_LANG_LOGITS=None,
+                      distractor_aux_logits=None, CLASS_LOGITS_post=None):
         """
         LOGITS: [N, trg_seq_length, 52]
         """
@@ -275,7 +281,10 @@ class ReferIt3DNet_transformer(nn.Module):
             referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
             trg_pass = None
         
+        # Obj Cls Loss:
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
+        if self.obj_cls_post:
+            obj_clf_loss += self.class_logits_loss(CLASS_LOGITS_post.transpose(2, 1), batch['class_labels'])
         
         if self.predict_lang_anchors:
             LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, self.lang_out).permute(0, 2, 1).reshape(-1, self.n_obj_classes)  # [N*trg_seq_length, num_cls]
@@ -441,6 +450,9 @@ class ReferIt3DNet_transformer(nn.Module):
             factor = mean.shape[-1] / obj_points.shape[2:].numel()  # 1024*6
             self.reg_term *= factor
 
+        if self.obj_cls_post:
+            CLASS_LOGITS_post = self.obj_clf_post(agg_feats)
+            
         if self.anchors_mode == "cot":
             if self.cot_type == "cross":
                 parallel_embd = self.parallel_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]
@@ -474,7 +486,7 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             distractor_aux_logits = None
         # <LOSS>: ref_cls
-        LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS, AUX_LANG_LOGITS, distractor_aux_logits)  # []
+        LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS, AUX_LANG_LOGITS, distractor_aux_logits, CLASS_LOGITS_post)  # []
         if self.anchors_mode != 'none':
             LOGITS = LOGITS[:, -1]
         

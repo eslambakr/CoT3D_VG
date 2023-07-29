@@ -93,6 +93,8 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--freezed_pointnet_weights', type=str, default=None, 
                         help="If set this means that the P++ will be frozen and and pretrained wieghts will be loaded. \
                         This trick is proposed by VIL.")
+    parser.add_argument('--obj_cls_post', type=str2bool, default=False, 
+                        help="If activated this means we will add another cls head after multi-modal transformer. We have done this to mimic VIL.")
 
     #
     # Model arguments

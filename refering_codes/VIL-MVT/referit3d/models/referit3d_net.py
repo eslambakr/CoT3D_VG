@@ -39,7 +39,8 @@ class ReferIt3DNet_transformer(nn.Module):
                  n_obj_classes,
                  class_name_tokens,
                  ignore_index,
-                 class_to_idx):
+                 class_to_idx,
+                 dist_mode):
 
         super().__init__()
 
@@ -72,6 +73,7 @@ class ReferIt3DNet_transformer(nn.Module):
         self.train_objcls_alone_flag = args.train_objcls_alone_flag
         self.freezed_pointnet_weights = args.freezed_pointnet_weights
         self.obj_cls_post = args.obj_cls_post
+        self.dist_mode = dist_mode
         self.class_to_idx = class_to_idx
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.cls_names = np.array(list(self.idx_to_class.values()))
@@ -97,12 +99,17 @@ class ReferIt3DNet_transformer(nn.Module):
             self.n_obj_classes = n_obj_classes
 
         # Object Classifier part:
-        self.object_encoder = PointNetPP(sa_n_points=[32, 16, None],
-                                         sa_n_samples=[[32], [32], [None]],
-                                         sa_radii=[[0.2], [0.4], [None]],
-                                         sa_mlps=[[[3, 64, 64, 128]],
-                                                  [[128, 128, 128, 256]],
-                                                  [[256, 256, self.object_dim, self.object_dim]]])
+        if self.vil_flag and self.dist_mode == "teacher":
+            self.object_encoder = nn.Sequential(nn.Linear(300, self.object_dim),
+                                                nn.LayerNorm(self.object_dim),
+                                                nn.Dropout(self.dropout_rate))
+        else:
+            self.object_encoder = PointNetPP(sa_n_points=[32, 16, None],
+                                            sa_n_samples=[[32], [32], [None]],
+                                            sa_radii=[[0.2], [0.4], [None]],
+                                            sa_mlps=[[[3, 64, 64, 128]],
+                                                    [[128, 128, 128, 256]],
+                                                    [[256, 256, self.object_dim, self.object_dim]]])
         self.obj_feature_mapping = nn.Sequential(
             nn.Linear(self.object_dim, self.inner_dim),
             nn.LayerNorm(self.inner_dim),
@@ -331,8 +338,12 @@ class ReferIt3DNet_transformer(nn.Module):
 
         ## rotation augmentation and multi_view generation
         if self.vil_flag:
-            obj_points = batch['objects'].float().to(self.device)  # [128, 52, 1024, 6]
-            boxs = batch['box_info'].float().to(self.device)
+            if self.dist_mode == "teacher":
+                obj_points = batch['class_labels_glove_embed'].float().to(self.device)  # [128, 52, ?]
+                boxs = batch['box_info'].float().to(self.device)
+            elif self.dist_mode == "student":
+                obj_points = batch['objects'].float().to(self.device)  # [128, 52, 1024, 6]
+                boxs = batch['box_info'].float().to(self.device)
         else:
             obj_points, boxs = self.aug_input(batch['objects'], batch['box_info'])  # [128, 52, 1024, 6], [128, 4, 52, 4]
         B, N, P = obj_points.shape[:3]

@@ -117,7 +117,18 @@ if __name__ == '__main__':
     gpu_num = len(args.gpu.strip(',').split(','))
 
     if args.model == 'referIt3DNet_transformer':
-        model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx, class_to_idx=class_to_idx)
+        if args.vil_flag:
+            if args.dist_type == "teacher_student":
+                model_teacher = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx,
+                                                          class_to_idx=class_to_idx, dist_mode="teacher")
+                model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx,
+                                                  class_to_idx=class_to_idx, dist_mode="student")
+            elif args.dist_type == "teacher":
+                model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx, class_to_idx=class_to_idx, dist_mode="teacher")
+            elif args.dist_type == "student":
+                model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx, class_to_idx=class_to_idx, dist_mode="student")
+        else:
+            model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx, class_to_idx=class_to_idx)
     else:
         assert False
 
@@ -134,8 +145,12 @@ if __name__ == '__main__':
 
     if gpu_num > 1:
         model = nn.DataParallel(model)
+        if args.vil_flag and args.dist_type == "teacher_student":
+            model_teacher = nn.DataParallel(model_teacher)
 
     model = model.to(device)
+    if args.vil_flag and args.dist_type == "teacher_student":
+            model_teacher = model_teacher.to(device)
     print(model)
 
     # <1>

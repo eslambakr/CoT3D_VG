@@ -5,7 +5,7 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/VIL-MVT
     -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_sr3d_org/keep_all_points_with_global_scan_alignment/keep_all_points_with_global_scan_alignment.pkl \
     -referit3D-file /home/abdelrem/3d_codes/scannet_dataset/scannet/sr3d.csv \
     --bert-pretrain-path /home/abdelrem/3d_codes/MVT-3DVG/weights/bert-base-uncased/ \
-    --log-dir logs/sr/vil_sr3d_bs24_cot_data100%_ClsLossPost \
+    --log-dir logs/sr/del_teacher_vil_sr3d_bs24_cot_data100%_ClsLossPost \
     --n-workers 16 \
     --model 'referIt3DNet_transformer' \
     --unit-sphere-norm True \
@@ -13,7 +13,7 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/VIL-MVT
     --encoder-layer-num 3 \
     --decoder-layer-num 4 \
     --decoder-nhead-num 8 \
-    --gpu "3" \
+    --gpu "0" \
     --view_number 4 \
     --rotate_number 4 \
     --label-lang-sup True \
@@ -30,5 +30,8 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/VIL-MVT
     --vil_flag True \
     --train_objcls_alone_flag False \
     --freezed_pointnet_weights 'none' \
-    --obj_cls_post True
+    --obj_cls_post True \
+    --dist_type "teacher" \
+    --cat2glove "/home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/cat2glove42b.json" \
+    --category_file "/home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/scannetv2_raw_categories.json"
     #--freezed_pointnet_weights 'logs/sr/train_objcls_alone_lang/07-08-2023-15-35-17/checkpoints/best_model.pth'

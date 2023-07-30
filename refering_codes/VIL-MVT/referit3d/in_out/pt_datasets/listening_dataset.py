@@ -25,7 +25,8 @@ class ListeningDataset(Dataset):
                  class_to_idx=None, object_transformation=None, visualization=False,
                  anchors_mode="cot", max_anchors=2, predict_lang_anchors=False, 
                  shuffle_objects=None, pc_transforms=None, textaug_paraphrase_percentage=None, shuffle_objects_percentage=None,
-                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False, vil_flag=False):
+                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False, vil_flag=False, dist_type=None,
+                 cat2glove=None, category_file=None):
 
         self.references = references
         self.scans = scans
@@ -46,6 +47,7 @@ class ListeningDataset(Dataset):
         self.distractor_aux_loss_flag = distractor_aux_loss_flag
         self.is_train = is_train
         self.vil_flag = vil_flag
+        self.dist_type = dist_type
         with open('/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/unique_rel_map_dict_opposite.json') as f:
             self.opposite_dict = json.load(f)
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
@@ -54,6 +56,18 @@ class ListeningDataset(Dataset):
             self.max_anchors = 0
         if not check_segmented_object_order(scans):
             raise ValueError
+        
+        if self.vil_flag and ("teacher" in self.dist_type):
+            self.int2cat = json.load(open(category_file, 'r'))
+            self.cat2int = {w: i for i, w in enumerate(self.int2cat)}
+            self.cat2vec = json.load(open(cat2glove, 'r'))
+
+            # Add no_obj
+            if self.anchors_mode != 'none':
+                self.cat2int['no_obj'] = len(self.cat2int)
+                self.int2cat.append('no_obj')
+                if self.cat2vec is not None:
+                    self.cat2vec['no_obj'] = [-1]*300
 
     def __len__(self):
         return len(self.references)
@@ -298,6 +312,11 @@ class ListeningDataset(Dataset):
                     anchors_pos_with_no_obj.append(anchors_pos[i])
                     i += 1
             res['anchors_pos'] = np.array(anchors_pos_with_no_obj + [anchors_pos[-1]]*(self.max_anchors-len(self.anchors_ids)))
+            """
+            print("-------- anchors_pos = ", anchors_pos, "-- tokens = ", tokens, "-- res['class_labels'] = ",
+                   res['class_labels'], "-- anchor Name = ", res['class_labels'][anchors_pos[0]],
+                   "-- anchor name 2 = ", self.class_to_idx[context[anchors_pos[0]].instance_label])
+            """
 
         if self.distractor_aux_loss_flag:
             res['distractor_mask'] = np.zeros(len(res['objects']))
@@ -329,6 +348,9 @@ class ListeningDataset(Dataset):
             # TODO: Eslam should fix the dummy masks to be real masks
             res['txt_masks'] = np.full((self.max_seq_len), True)
             res['obj_masks'] = np.full((self.max_context_size), True)
+
+            if ("teacher" in self.dist_type):
+                res['class_labels_glove_embed'] = torch.FloatTensor([self.cat2vec[self.int2cat[x]] for x in res['class_labels']])
 
         if self.visualization:
             distrators_pos = np.zeros((50))  # 6 is the maximum context size we used in dataset collection
@@ -450,7 +472,11 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    target_aug_percentage=args.target_aug_percentage,
                                    is_train=split=='train',
                                    distractor_aux_loss_flag=args.distractor_aux_loss_flag,
-                                   vil_flag=args.vil_flag)
+                                   vil_flag=args.vil_flag,
+                                   dist_type=args.dist_type,
+                                   cat2glove=args.cat2glove,
+                                   category_file=args.category_file,
+                                   )
 
         seed = None
         if split == 'test':

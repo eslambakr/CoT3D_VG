@@ -95,6 +95,12 @@ def parse_arguments(notebook_options=None):
                         This trick is proposed by VIL.")
     parser.add_argument('--obj_cls_post', type=str2bool, default=False, 
                         help="If activated this means we will add another cls head after multi-modal transformer. We have done this to mimic VIL.")
+    parser.add_argument('--dist_type', type=str, default="student", 
+                        help="Three options are available: [student, teacher, teacher_student]")
+    parser.add_argument('--cat2glove', type=str, default="none", 
+                        help="Should be activated only with teacher. This is the path for the precomputed features for each cls category.")
+    parser.add_argument('--category_file', type=str, default="none", 
+                        help="Should be activated only with teacher. This is the path for the category_file.")
 
     #
     # Model arguments

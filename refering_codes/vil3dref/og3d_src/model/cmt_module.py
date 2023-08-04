@@ -222,7 +222,7 @@ class CMT(nn.Module):
 
         decoder_layer = decoder_class(
             config.hidden_size, config.num_attention_heads,
-            dim_feedforward=2048, dropout=0.1, activation='gelu', **kwargs
+            dim_feedforward=config.dim_feedforward, dropout=0.1, activation='gelu', **kwargs
         )
         self.layers = _get_clones(decoder_layer, config.num_layers)
 

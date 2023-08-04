@@ -48,13 +48,14 @@ def build_gtlabel_datasets(data_cfg, cot_cfg):
         distractor_aux_loss_flag=cot_cfg.distractor_aux_loss_flag,
         data_csv_pth=cot_cfg.data_csv_pth,
         train_data_percent=cot_cfg.train_data_percent,
-        is_nr3d=data_cfg.is_nr3d
+        is_nr3d=data_cfg.is_nr3d,
+        anchors_ids_type=cot_cfg.anchors_ids_type
     )
     val_dataset = GTLabelDataset(
         data_cfg.val_scan_split, data_cfg.anno_file, 
         data_cfg.scan_dir, data_cfg.category_file,
         cat2vec_file=data_cfg.cat2vec_file,
-        max_txt_len=None, max_obj_len=None, 
+        max_txt_len=data_cfg.max_txt_len, max_obj_len=data_cfg.max_obj_len, 
         keep_background=data_cfg.keep_background,
         random_rotate=False,
         gt_scan_dir=data_cfg.get('gt_scan_dir', None),
@@ -66,7 +67,8 @@ def build_gtlabel_datasets(data_cfg, cot_cfg):
         distractor_aux_loss_flag=cot_cfg.distractor_aux_loss_flag,
         data_csv_pth=cot_cfg.data_csv_pth,
         train_data_percent=1.0,
-        is_nr3d=data_cfg.is_nr3d
+        is_nr3d=data_cfg.is_nr3d,
+        anchors_ids_type=cot_cfg.anchors_ids_type
     )
     return trn_dataset, val_dataset
 
@@ -184,7 +186,7 @@ def main(opts):
     opts.num_train_steps = len(trn_dataloader) * opts.num_epoch
 
     if opts.test:
-        val_log, out_preds = validate(model, model_cfg, val_dataloader, return_preds=True)
+        val_log, out_preds = validate(model, model_cfg, val_dataloader, return_preds=True, cot_cfg=cot_cfg)
         pred_dir = os.path.join(opts.output_dir, 'preds')
         os.makedirs(pred_dir, exist_ok=True)
         json.dump(out_preds, open(os.path.join(pred_dir, 'val_outs.json'), 'w'))
@@ -213,7 +215,7 @@ def main(opts):
     optimizer.step()
 
     if default_gpu:
-        val_log = validate(model, model_cfg, val_dataloader)
+        val_log = validate(model, model_cfg, val_dataloader, cot_cfg=cot_cfg)
     
     val_best_scores =  {'epoch': -1, 'acc/og3d': -float('inf')}
     epoch_iter = range(opts.num_epoch)
@@ -264,7 +266,7 @@ def main(opts):
         )
         if default_gpu and (epoch+1) % opts.val_every_epoch == 0:
             LOGGER.info(f'------Epoch {epoch+1}: start validation (val)------')
-            val_log = validate(model, model_cfg, val_dataloader)
+            val_log = validate(model, model_cfg, val_dataloader, cot_cfg=cot_cfg)
             TB_LOGGER.log_scalar_dict(
                 {f'valid/{k}': v.avg for k, v in val_log.items()}
             )
@@ -284,7 +286,7 @@ def main(opts):
     )
 
 @torch.no_grad()
-def validate(model, model_cfg, val_dataloader, niters=None, return_preds=False):
+def validate(model, model_cfg, val_dataloader, niters=None, return_preds=False, cot_cfg=None):
     model.eval()
 
     output_attentions = True
@@ -305,11 +307,19 @@ def validate(model, model_cfg, val_dataloader, niters=None, return_preds=False):
         for lk, lv in loss_dict.items():
             avg_metrics[lk].update(lv, n=batch_size)
 
-        og3d_preds = torch.argmax(result['og3d_logits'], dim=1).cpu()
-        avg_metrics['acc/og3d'].update(
-            torch.mean((og3d_preds == batch['tgt_obj_idxs']).float()).item(),
-            n=batch_size
-        )
+        if cot_cfg.anchors == "cot":
+            og3d_preds = torch.argmax(result['og3d_logits'][:, -1, :], dim=1).cpu()
+            og3d_preds_anchor1 = torch.argmax(result['og3d_logits'][:, 0, :], dim=1).cpu()
+            avg_metrics['acc/og3d_anchor1'].update(torch.mean((og3d_preds_anchor1 == batch['anchor_objs_idxs'][:, 0]).float()).item(), n=batch_size)
+            # Auxaliray Loss:
+            tgt_aux_preds = torch.argmax(result['AUX_LOGITS'][:, -1, :], dim=1).cpu()
+            avg_metrics['acc/og3d_aux'].update(torch.mean((tgt_aux_preds == batch['tgt_obj_idxs']).float()).item(), n=batch_size)
+            anchor1_aux_preds = torch.argmax(result['AUX_LOGITS'][:, 0, :], dim=1).cpu()
+            avg_metrics['acc/og3d_anchor1_aux'].update(torch.mean((anchor1_aux_preds == batch['anchor_objs_idxs'][:, 0]).float()).item(), n=batch_size)
+        else:
+            og3d_preds = torch.argmax(result['og3d_logits'], dim=1).cpu()
+        avg_metrics['acc/og3d'].update(torch.mean((og3d_preds == batch['tgt_obj_idxs']).float()).item(), n=batch_size)
+
         avg_metrics['acc/og3d_class'].update(
             torch.mean((batch['obj_classes'].gather(1, og3d_preds.unsqueeze(1)).squeeze(1) == batch['tgt_obj_classes']).float()).item(),
             n=batch_size

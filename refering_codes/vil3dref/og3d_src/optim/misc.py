@@ -13,7 +13,7 @@ from .rangerlars import RangerLars
 def build_optimizer(model, opts):
     param_optimizer = list(model.named_parameters())
     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-    obj_enc_params, txt_enc_params, other_params, cot_decoder_params = {}, {}, {}, {}
+    obj_enc_params, txt_enc_params, other_params, cot_decoder_params, anchors_lang_trans_params = {}, {}, {}, {}, {}
     for n, p in param_optimizer:
         if not p.requires_grad: continue
         if 'obj_encoder' in n:
@@ -22,12 +22,14 @@ def build_optimizer(model, opts):
             txt_enc_params[n] = p
         elif 'cot_decoder' in n:
             cot_decoder_params[n] = p
+        elif 'language_trans' in n:
+            anchors_lang_trans_params[n] = p
         else:
             other_params[n] = p
     
     optimizer_grouped_parameters = []
     init_lrs = []
-    for ptype, pdict in [('obj', obj_enc_params), ('txt', txt_enc_params), ('others', other_params), ('cot', cot_decoder_params)]:
+    for ptype, pdict in [('obj', obj_enc_params), ('txt', txt_enc_params), ('others', other_params), ('cot', cot_decoder_params), ('anchors_lang_trans', anchors_lang_trans_params)]:
         if len(pdict) == 0:
             continue
         init_lr = opts.learning_rate
@@ -37,6 +39,8 @@ def build_optimizer(model, opts):
             init_lr = init_lr * getattr(opts, 'txt_encoder_lr_multi', 1)
         elif ptype == 'cot':
             init_lr = init_lr * getattr(opts, 'cot_decoder_lr_multi', 1)
+        elif ptype == 'anchors_lang_trans':
+            init_lr = init_lr * getattr(opts, 'anchors_lang_trans_lr_multi', 1)
         optimizer_grouped_parameters.extend([
             {'params': [p for n, p in pdict.items()
                         if not any(nd in n for nd in no_decay)],

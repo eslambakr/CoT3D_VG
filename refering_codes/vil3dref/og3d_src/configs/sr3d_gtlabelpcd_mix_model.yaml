@@ -9,19 +9,20 @@ rank: -1
 gpu: 0
 
 seed: 0
-num_epoch: 50
-batch_size: 64
-weight_decay: 0.01
-optim: adamw
+num_epoch: 100
+batch_size: 16
+weight_decay: 0.0
+optim: adam
 learning_rate: 0.0005
 lr_decay: cosine
 txt_encoder_lr_multi: 0.1
 obj_encoder_lr_multi: 1
 cot_decoder_lr_multi: 0.1
+anchors_lang_trans_lr_multi: 0.1
 betas: [0.9, 0.98]
 warmup_steps: 5000
 grad_norm: 5.0
-num_workers: 4
+num_workers: 8
 val_every_epoch: 1
 
 model:
@@ -60,6 +61,7 @@ model:
     num_layers: 4
     obj_loc_encoding: same_all # same_0, same_all, diff_all 
     pairwise_rel_type: center
+    dim_feedforward: 2048
   losses:
     obj3d_clf: 1
     obj3d_clf_pre: 1
@@ -68,6 +70,7 @@ model:
     distill_self_attns: 1
     distill_cross_attns: 1
     distill_hiddens: 0.02
+    cot_teacher_loss: false
 
 dataset:
   is_nr3d: false
@@ -85,12 +88,12 @@ dataset:
   max_obj_len: 80
   keep_background: false
   random_rotate: true
-  repeat: 6
+  repeat: 1
 
 cot:
   anchors: 'cot'
   cot_type: 'cross'
-  predict_lang_anchors: false
+  predict_lang_anchors: true
   train_data_percent: 0.1
   max_num_anchors: 1
   target_aug_percentage: 0

@@ -91,6 +91,14 @@ class ReferIt3DNetMix(nn.Module):
                 mse_loss = torch.sum(mse_loss * cross_attn_masks) / cross_attn_sum
                 losses['cross_attn_%d' % i] = mse_loss * self.config.losses.distill_cross_attns
                 losses['total'] += losses['cross_attn_%d' % i]
+            if self.config.losses.cot_teacher_loss:
+                cross_attn_masks = batch['obj_masks'].unsqueeze(2) * student_outs['sampled_embd_mask'].unsqueeze(1)
+                cross_attn_masks = cross_attn_masks.float()
+                cross_attn_sum = cross_attn_masks.sum()
+                mse_loss = (teacher_outs['cot_all_cross_attns'][0] - student_outs['cot_all_cross_attns'][0])**2
+                mse_loss = torch.sum(mse_loss * cross_attn_masks) / cross_attn_sum
+                losses['cot_cross_attn'] = mse_loss * self.config.losses.distill_cross_attns
+                losses['total'] += losses['cot_cross_attn']
 
         if self.config.losses.distill_self_attns > 0:
             self_attn_masks = batch['obj_masks'].unsqueeze(2) * batch['obj_masks'].unsqueeze(1)
@@ -101,6 +109,11 @@ class ReferIt3DNetMix(nn.Module):
                 mse_loss = torch.sum(mse_loss * self_attn_masks) / self_attn_sum
                 losses['self_attn_%d' % i] = mse_loss * self.config.losses.distill_self_attns
                 losses['total'] += losses['self_attn_%d' % i]
+            if self.config.losses.cot_teacher_loss:
+                mse_loss = (teacher_outs['cot_all_self_attns'][0] - student_outs['cot_all_self_attns'][0])**2
+                mse_loss = torch.sum(mse_loss * self_attn_masks) / self_attn_sum
+                losses['cot_self_attn'] = mse_loss * self.config.losses.distill_self_attns
+                losses['total'] += losses['cot_self_attn']
 
         if self.config.losses.distill_hiddens > 0:
             hidden_masks = batch['obj_masks'].unsqueeze(2).float()
@@ -110,6 +123,11 @@ class ReferIt3DNetMix(nn.Module):
                 mse_loss = torch.sum(mse_loss * hidden_masks) / hidden_sum
                 losses['hidden_state_%d' % i] = mse_loss * self.config.losses.distill_hiddens
                 losses['total'] += losses['hidden_state_%d' % i]
+            if self.config.losses.cot_teacher_loss:
+                mse_loss = (teacher_outs['cot_all_hidden_states'][0] - student_outs['cot_all_hidden_states'][0])**2
+                mse_loss = torch.sum(mse_loss * hidden_masks) / hidden_sum
+                losses['cot_hidden_state'] = mse_loss * self.config.losses.distill_hiddens
+                losses['total'] += losses['cot_hidden_state']
 
         return losses
 

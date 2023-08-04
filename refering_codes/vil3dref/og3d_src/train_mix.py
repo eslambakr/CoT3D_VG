@@ -49,13 +49,15 @@ def build_datasets(data_cfg, cot_cfg):
         data_csv_pth=cot_cfg.data_csv_pth,
         train_data_percent=cot_cfg.train_data_percent,
         is_nr3d=data_cfg.is_nr3d,
-        repeat=data_cfg.repeat
+        repeat=data_cfg.repeat,
+        anchors_ids_type=cot_cfg.anchors_ids_type
     )
     val_dataset = GTLabelPcdDataset(
         data_cfg.val_scan_split, data_cfg.anno_file, 
         data_cfg.scan_dir, data_cfg.category_file,
         cat2vec_file=data_cfg.cat2vec_file,
-        max_txt_len=None, max_obj_len=None, random_rotate=False,
+        max_txt_len=data_cfg.max_txt_len, max_obj_len=data_cfg.max_obj_len,  # TODO: Eslam should revist this "max_obj_len=None"
+        random_rotate=False,
         keep_background=data_cfg.get('keep_background', False),
         num_points=data_cfg.num_points, in_memory=True,
         gt_scan_dir=data_cfg.get('gt_scan_dir', None),
@@ -68,7 +70,8 @@ def build_datasets(data_cfg, cot_cfg):
         data_csv_pth=cot_cfg.data_csv_pth,
         train_data_percent=1.0,
         is_nr3d=data_cfg.is_nr3d,
-        repeat=data_cfg.repeat
+        repeat=1,
+        anchors_ids_type=cot_cfg.anchors_ids_type
     )
     return trn_dataset, val_dataset
 
@@ -168,14 +171,14 @@ def main(opts):
         sampler=trn_sampler
     )
     val_dataloader = DataLoader(
-        val_dataset, batch_size=opts.batch_size, shuffle=False, 
-        num_workers=opts.num_workers, collate_fn=collate_fn,
+        val_dataset, batch_size=opts.batch_size*4, shuffle=False, 
+        num_workers=opts.num_workers*2, collate_fn=collate_fn,
         pin_memory=True, drop_last=False, prefetch_factor=1,
     )
     opts.num_train_steps = len(trn_dataloader) * opts.num_epoch
 
     if opts.test:
-        val_log, out_preds = validate(model, model_cfg, val_dataloader, return_preds=True)
+        val_log, out_preds = validate(model, model_cfg, val_dataloader, return_preds=True, cot_cfg=cot_cfg)
         pred_dir = os.path.join(opts.output_dir, 'preds')
         os.makedirs(pred_dir, exist_ok=True)
         # np.save(os.path.join(pred_dir, 'val_outs.npy'), out_preds)
@@ -184,6 +187,8 @@ def main(opts):
 
     # Prepare optimizer
     optimizer, init_lrs = build_optimizer(model, opts)
+    # Eslam add this to mimic MVT lr scheduling:
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [40, 50, 60, 70, 80, 90], gamma=0.65)
 
     LOGGER.info(f"***** Running training with {opts.world_size} GPUs *****")
     LOGGER.info("  Batch size = %d", opts.batch_size if opts.local_rank == -1 else opts.batch_size * opts.world_size)
@@ -199,13 +204,15 @@ def main(opts):
     optimizer.step()
 
     if default_gpu:
-        val_log = validate(model, model_cfg, val_dataloader)
+        val_log = validate(model, model_cfg, val_dataloader, cot_cfg=cot_cfg)
     
     val_best_scores =  {'epoch': -1, 'acc/og3d': -float('inf')}
     epoch_iter = range(opts.num_epoch)
     if default_gpu:
         epoch_iter = tqdm(epoch_iter)
     for epoch in epoch_iter:
+        LOGGER.info(f"***** Learning rate is {lr_scheduler.get_last_lr()}")
+        print("cnt_lr", lr_scheduler.get_last_lr())
         pre_epoch(epoch)    # for distributed
 
         start_time = time.time()
@@ -220,10 +227,12 @@ def main(opts):
             # optimizer update and logging
             global_step += 1
             # learning rate scheduling:
+            """
             lr_decay_rate = get_lr_sched_decay_rate(global_step, opts)
             for kp, param_group in enumerate(optimizer.param_groups):
                 param_group['lr'] = lr_this_step = init_lrs[kp] * lr_decay_rate
             TB_LOGGER.add_scalar('lr', lr_this_step, global_step)
+            """
 
             # log loss
             # NOTE: not gathered across GPUs for efficiency
@@ -245,12 +254,12 @@ def main(opts):
             
         LOGGER.info(
             'Epoch %d, lr: %.6f, %s', epoch+1,  
-            optimizer.param_groups[-1]['lr'],
+            optimizer.param_groups[2]['lr'],
             ', '.join(['%s: %.4f'%(lk, lv.avg) for lk, lv in avg_metrics.items()])
         )
         if default_gpu and (epoch+1) % opts.val_every_epoch == 0:
             LOGGER.info(f'------Epoch {epoch+1}: start validation (val)------')
-            val_log = validate(model, model_cfg, val_dataloader)
+            val_log = validate(model, model_cfg, val_dataloader, cot_cfg=cot_cfg)
             TB_LOGGER.log_scalar_dict(
                 {f'valid/{k}': v.avg for k, v in val_log.items()}
             )
@@ -262,7 +271,9 @@ def main(opts):
                 val_best_scores['epoch'] = epoch + 1
                 model_saver.remove_previous_models(epoch+1)
             else:
-                os.remove(output_model_file)    
+                os.remove(output_model_file)   
+
+        lr_scheduler.step() 
     
     LOGGER.info('Finished training!')
     LOGGER.info(
@@ -270,12 +281,12 @@ def main(opts):
     )
 
 @torch.no_grad()
-def validate(model, model_cfg, val_dataloader, niters=None, return_preds=False):
+def validate(model, model_cfg, val_dataloader, niters=None, return_preds=False, cot_cfg=None):
     model.eval()
         
     avg_metrics = defaultdict(AverageMeter)
     out_preds = {}
-    for ib, batch in enumerate(val_dataloader):
+    for ib, batch in enumerate(tqdm(val_dataloader)):
         batch_size = len(batch['scan_ids'])
         # print(batch['item_ids'][0])
         result, losses = model(batch, compute_loss=True, is_test=True)
@@ -284,12 +295,19 @@ def validate(model, model_cfg, val_dataloader, niters=None, return_preds=False):
         for lk, lv in loss_dict.items():
             avg_metrics[lk].update(lv, n=batch_size)
 
-        og3d_preds = torch.argmax(result['og3d_logits'], dim=1).cpu()
-        # print(torch.max(F.softmax(result['og3d_logits'], 1), 1)[0])
-        avg_metrics['acc/og3d'].update(
-            torch.mean((og3d_preds == batch['tgt_obj_idxs']).float()).item(),
-            n=batch_size
-        )
+        if cot_cfg.anchors == "cot":
+            og3d_preds = torch.argmax(result['og3d_logits'][:, -1, :], dim=1).cpu()
+            og3d_preds_anchor1 = torch.argmax(result['og3d_logits'][:, 0, :], dim=1).cpu()
+            avg_metrics['acc/og3d_anchor1'].update(torch.mean((og3d_preds_anchor1 == batch['anchor_objs_idxs'][:, 0]).float()).item(), n=batch_size)
+            # Auxaliray Loss:
+            tgt_aux_preds = torch.argmax(result['AUX_LOGITS'][:, -1, :], dim=1).cpu()
+            avg_metrics['acc/og3d_aux'].update(torch.mean((tgt_aux_preds == batch['tgt_obj_idxs']).float()).item(), n=batch_size)
+            anchor1_aux_preds = torch.argmax(result['AUX_LOGITS'][:, 0, :], dim=1).cpu()
+            avg_metrics['acc/og3d_anchor1_aux'].update(torch.mean((anchor1_aux_preds == batch['anchor_objs_idxs'][:, 0]).float()).item(), n=batch_size)
+        else:
+            og3d_preds = torch.argmax(result['og3d_logits'], dim=1).cpu()
+        avg_metrics['acc/og3d'].update(torch.mean((og3d_preds == batch['tgt_obj_idxs']).float()).item(), n=batch_size)
+
         avg_metrics['acc/og3d_class'].update(
             torch.mean((batch['obj_classes'].gather(1, og3d_preds.unsqueeze(1)).squeeze(1) == batch['tgt_obj_classes']).float()).item(),
             n=batch_size

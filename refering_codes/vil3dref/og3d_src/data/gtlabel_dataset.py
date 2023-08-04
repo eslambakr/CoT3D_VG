@@ -26,7 +26,7 @@ class GTLabelDataset(Dataset):
         cat2vec_file=None, keep_background=False, random_rotate=False, 
         max_txt_len=50, max_obj_len=80, gt_scan_dir=None, iou_replace_gt=0, 
         anchors_mode="none", max_anchors=7, predict_lang_anchors=False, target_aug_percentage=None, is_train=None,
-        distractor_aux_loss_flag=False, data_csv_pth="", train_data_percent=1.0, is_nr3d=True, repeat=1
+        distractor_aux_loss_flag=False, data_csv_pth="", train_data_percent=1.0, is_nr3d=True, repeat=1, anchors_ids_type=None
     ):
         super().__init__()
 
@@ -47,11 +47,23 @@ class GTLabelDataset(Dataset):
         self.target_aug_percentage = target_aug_percentage
         self.distractor_aux_loss_flag = distractor_aux_loss_flag
         self.repeat = repeat
+        self.predict_lang_anchors = predict_lang_anchors
+        self.anchors_ids_type = anchors_ids_type
+        if self.anchors_mode != 'none':
+            self.max_obj_len -=1
 
         if self.is_nr3d:
             self.nr3d_cot_dict = pd.read_csv(data_csv_pth).to_dict()
             self.stimulus_id_list = list(self.nr3d_cot_dict['stimulus_id'].values())
-            cot_keys = ['path', 'anchor_ids', 'num_anchors']
+            if self.anchors_ids_type == "pseudoWneg" or self.anchors_ids_type == "pseudoWneg_old":
+                cot_keys = ['path', 'anchor_ids', 'num_anchors']
+            elif self.anchors_ids_type == "pseudoWOneg":
+                cot_keys = ['our_neg_anchor_names', 'anchor_ids', 'num_anchors']
+            elif self.anchors_ids_type == "ourPathGTids":
+                cot_keys = ['path', 'our_gt_id', 'num_anchors']
+            elif self.anchors_ids_type == "GT":
+                cot_keys = ['true_gt_anchor_names', 'true_gt_id']
+
             if self.target_aug_percentage:
                 unique_rel = pd.read_csv("/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_unique_rel_anchor_data.csv").to_dict()
                 self.stimulus_unique_rel_id_list = list(unique_rel['stimulus_id'].values())
@@ -78,9 +90,6 @@ class GTLabelDataset(Dataset):
 
                     self.data.append(item)
 
-        # Repeat the data:
-        self.data = self.data * self.repeat
-
         # Target_aug_percentage
         if self.target_aug_percentage and (self.anchors_mode != 'none'):
             # Create word->encoded tokens dict:
@@ -100,7 +109,13 @@ class GTLabelDataset(Dataset):
             """
 
         # Train_data_percent:
+        print("The length of the data before percentage: ", len(self.data))
         self.data = self.data[:int(len(self.data)*self.train_data_percent)]
+        print("The length of the data after percentage: ", len(self.data))
+
+        # Repeat the data:
+        self.data = self.data * self.repeat
+        print("The length of the data after repeat: ", len(self.data))
 
         self.scans = {}
         for scan_id in self.scan_ids:
@@ -141,6 +156,7 @@ class GTLabelDataset(Dataset):
         # Add no_obj
         if self.anchors_mode != 'none':
             self.cat2int['no_obj'] = len(self.cat2int)
+            self.int2cat.append('no_obj')
             if self.cat2vec is not None:
                 self.cat2vec['no_obj'] = [-1]*300
         
@@ -210,18 +226,20 @@ class GTLabelDataset(Dataset):
                 obj_locs = np.append(obj_locs, np.ones((1,6))*-1, axis=0)
                 obj_colors = np.append(obj_colors, np.ones((1,3,4))*-1, axis=0)
                 obj_ids.append('-1')
-                padded_value = len(obj_labels)-1  # options are: -100 or len(obj_labels)-1
-                #padded_value = -100  # options are: -100 or len(obj_labels)-1
+                self.padded_value = len(obj_labels)-1  # options are: -100 or len(obj_labels)-1
+                #self.padded_value = -100  # options are: -100 or len(obj_labels)-1
+            else:
+                self.padded_value = -100
 
             for i in range(len(anchor_objs_idx)):
                 if anchor_objs_idx[i] == -1:
-                    anchor_objs_idx[i] = padded_value
+                    anchor_objs_idx[i] = self.padded_value
             # Trim additional anchors
             if len(anchor_objs_idx) > self.max_anchors:
                 anchor_objs_idx = anchor_objs_idx[:self.max_anchors]
             # Pad it to the self.max_anchors
             elif len(anchor_objs_idx) < self.max_anchors:
-                anchor_objs_idx = anchor_objs_idx + [padded_value]*(self.max_anchors - len(anchor_objs_idx))
+                anchor_objs_idx = anchor_objs_idx + [self.padded_value]*(self.max_anchors - len(anchor_objs_idx))
             # TODO: Eslam should remove this. This is for debuging only
             # anchor_objs_idx = [-100]*self.max_anchors
             
@@ -236,7 +254,14 @@ class GTLabelDataset(Dataset):
         tgt_obj_type = item['instance_type']
         if self.anchors_mode != 'none':
             if self.is_nr3d:
-                anchor_objs_idx = self._convertstringlist_to_list(item['anchor_ids'])
+                if self.anchors_ids_type == "pseudoWneg" or self.anchors_ids_type == "pseudoWneg_old":
+                    anchor_objs_idx = self._convertstringlist_to_list(item['anchor_ids'])
+                elif self.anchors_ids_type == "pseudoWOneg":
+                    anchor_objs_idx = self._convertstringlist_to_list(item['ours_with_neg_ids'])
+                elif self.anchors_ids_type == "ourPathGTids":
+                    anchor_objs_idx = self._convertstringlist_to_list(item['our_gt_id'])
+                elif self.anchors_ids_type == "GT":
+                    anchor_objs_idx = self._convertstringlist_to_list(item['true_gt_id'])
             else:
                 anchor_objs_idx = item['anchor_ids']
         else:
@@ -294,11 +319,20 @@ class GTLabelDataset(Dataset):
         if aug_anchor_objs_idx is not None:
             anchor_objs_type = []
             for i in range(len(aug_anchor_objs_idx)):
-                if aug_anchor_objs_idx[i] == -100:
+                if aug_anchor_objs_idx[i] == self.padded_value:
                     anchor_objs_type.append('no_obj')
                 else:
-                    anchor_objs_type.append(obj_labels[aug_anchor_objs_idx[i]])
+                    anchor_objs_type.append(aug_obj_labels[aug_anchor_objs_idx[i]])
             anchor_objs_classes = [self.cat2int[anchor_type] for anchor_type in anchor_objs_type]
+            # Extend number of classes to fixed number as this couldn't be changed like boxes:
+            if self.is_nr3d:
+                if self.anchors_ids_type == "GT":
+                    max_num_anchors_lang = 10
+                else:
+                    max_num_anchors_lang = 7
+            else:
+                max_num_anchors_lang = 2
+            anchor_objs_classes += [self.cat2int['no_obj'] for _ in range(max_num_anchors_lang - len(anchor_objs_classes))]
 
         # Target_aug_percentage:
         if self.is_nr3d and self.target_aug_percentage and (self.anchors_mode != 'none'):
@@ -367,6 +401,7 @@ class GTLabelDataset(Dataset):
             'anchor_objs_classes': anchor_objs_classes,
             'obj_ids': aug_obj_ids,
             'distractor_mask': distractor_mask,
+            'utterance': item['utterance'],
         }
 
         return outs
@@ -394,6 +429,10 @@ def gtlabel_collate_fn(data):
     )
     outs['tgt_obj_idxs'] = torch.LongTensor(outs['tgt_obj_idxs'])
     outs['tgt_obj_classes'] = torch.LongTensor(outs['tgt_obj_classes'])
+
+    if outs['anchor_objs_classes'][0] is not None:
+        outs['anchor_objs_classes'] = torch.LongTensor(outs['anchor_objs_classes'])
+
     if outs['anchor_objs_idxs'][0] is not None:
         outs['anchor_objs_idxs'] = pad_sequence(outs['anchor_objs_idxs'], batch_first=True, padding_value=-100)
 

@@ -316,6 +316,8 @@ def validate(model, val_dataloader, device):
         for bk, bv in batch.items():
             batch[bk] = bv.to(device)
         logits = model(batch['obj_pcds'])
+        # print("--- logits = ", logits.shape)  # torch.Size([16, 608])
+        # print("--- batch['obj_labels'] = ", batch['obj_labels'].shape)  # torch.Size([16])
         loss = F.cross_entropy(logits, batch['obj_labels']).data.item()
         preds = torch.argmax(logits, 1)
         acc = torch.mean((preds == batch['obj_labels']).float()).item()
@@ -336,6 +338,7 @@ def validate(model, val_dataloader, device):
 def build_args():
     parser = load_parser()
     opts = parse_with_config(parser)
+    opts.gpu = 0
 
     if os.path.exists(opts.output_dir) and os.listdir(opts.output_dir):
         LOGGER.warning(

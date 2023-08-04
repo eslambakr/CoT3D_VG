@@ -51,6 +51,24 @@ def freeze_bn(m):
         if isinstance(layer, nn.BatchNorm2d):
             layer.eval()
 
+
+class CoTMMConfig:
+    def __init__(self):
+        self.type = "cmt"
+        self.spatial_dec = False
+        self.spatial_multihead = False
+        self.spatial_dim = 0
+        self.spatial_dist_norm = False
+        self.spatial_attn_fusion = "cond"
+        self.num_layers = 1
+        self.obj_loc_encoding = "same_all"
+        self.pairwise_rel_type = "center"
+        self.dim_feedforward = 512
+        self.hidden_size = 768
+        self.num_attention_heads = 16
+        self.dim_loc = 6
+        
+
 class ReferIt3DNet(nn.Module):
     def __init__(self, config, device, cot_cfg):
         super().__init__()
@@ -64,6 +82,9 @@ class ReferIt3DNet(nn.Module):
         self.tgt_mul_w = cot_cfg.tgt_mul_w
         self.gaussian_latent = cot_cfg.gaussian_latent
         self.distractor_aux_loss_flag = cot_cfg.distractor_aux_loss_flag
+        self.predict_lang_anchors = cot_cfg.predict_lang_anchors
+        self.is_nr = True if 'nr' in cot_cfg.data_csv_pth else False
+        self.anchors_ids_type = cot_cfg.anchors_ids_type
 
         config.obj_encoder.num_obj_classes = config.num_obj_classes
         if self.config.model_type == 'gtlabel':
@@ -110,8 +131,11 @@ class ReferIt3DNet(nn.Module):
                 self.parallel_embedding = nn.Sequential(nn.Linear(config.hidden_size, config.hidden_size),
                                                         nn.ReLU(), nn.LayerNorm(config.hidden_size, eps=1e-12), nn.Dropout(config.dropout))
                 self.object_language_clf_parallel = nn.Linear(config.hidden_size, self.max_num_anchors+1)
-                self.cot_decoder = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=config.hidden_size, nhead=16, dim_feedforward=512,
-                                                                                                activation="gelu"), num_layers=1)
+                if config.losses.cot_teacher_loss:
+                    self.cot_decoder = CMT(CoTMMConfig())
+                else:
+                    self.cot_decoder = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=config.hidden_size, nhead=16, dim_feedforward=512,
+                                                                                                    activation="gelu"), num_layers=1)
                 self.og3d_head = get_mlp_head(input_size=config.hidden_size, hidden_size=config.hidden_size,
                                                output_size=self.max_num_anchors+1, dropout=config.dropout)
             else:
@@ -145,10 +169,22 @@ class ReferIt3DNet(nn.Module):
                 3, dropout=config.dropout
             )
         if self.config.losses.txt_clf > 0:
-            self.txt_clf_head = get_mlp_head(
-                config.hidden_size, config.hidden_size,
-                config.num_obj_classes, dropout=config.dropout
-            )
+            if self.predict_lang_anchors:
+                if self.is_nr:
+                    if self.anchors_ids_type == "GT":
+                        self.lang_out = 11
+                    else:
+                        self.lang_out = 8
+                else:
+                    self.lang_out = 3
+                #self.num_obj_classes = config.num_obj_classes + 1  # +1 to include the no_obj class
+            else:
+                self.lang_out = 1
+            self.num_obj_classes = config.num_obj_classes
+
+            self.language_trans = nn.TransformerEncoder(torch.nn.TransformerEncoderLayer(d_model=self.num_obj_classes, nhead=8, dim_feedforward=512,
+                                                                                        activation="gelu"), num_layers=1)
+            self.txt_clf_head = get_mlp_head(config.hidden_size, config.hidden_size, self.num_obj_classes*self.lang_out, dropout=config.dropout)
 
     def prepare_batch(self, batch):
         outs = {}
@@ -159,6 +195,13 @@ class ReferIt3DNet(nn.Module):
                 outs[key] = value
         return outs
         
+    def _create_att_mask(self, sz):
+        mask = (torch.triu(torch.ones((sz, sz), device=self.device)) == 1)
+        mask = mask.transpose(0, 1).float()
+        mask = mask.masked_fill(mask == 0, float('-inf'))
+        mask = mask.masked_fill(mask == 1, float(0.0))
+        return mask
+
     def forward(
         self, batch: dict, compute_loss=False, is_test=False,
         output_attentions=False, output_hidden_states=False,
@@ -167,7 +210,8 @@ class ReferIt3DNet(nn.Module):
 
         if self.config.obj_encoder.freeze or self.config.obj_encoder.freeze_bn:
             freeze_bn(self.obj_encoder)
-        obj_embeds = self.obj_encoder(batch['obj_fts'])
+        # print("--- batch['obj_fts'] before = ", batch['obj_fts'].shape)  # [64, 52, 300] or [64, 52, 1024, 6]
+        obj_embeds = self.obj_encoder(batch['obj_fts'])  # [64, 52, 768]
         if self.config.obj_encoder.freeze:
             obj_embeds = obj_embeds.detach()
         if self.config.obj_encoder.use_color_enc:
@@ -176,6 +220,7 @@ class ReferIt3DNet(nn.Module):
         txt_embeds = self.txt_encoder(
             batch['txt_ids'], batch['txt_masks'],
         ).last_hidden_state
+        # print("txt_embeds = ", txt_embeds.shape)  # [64, 13, 768]
         if self.config.txt_encoder.freeze:
             txt_embeds = txt_embeds.detach()
 
@@ -185,19 +230,21 @@ class ReferIt3DNet(nn.Module):
             output_attentions=output_attentions, 
             output_hidden_states=output_hidden_states,
         )  # [128, L, 768])
+        # print("batch['obj_locs'] = ", batch['obj_locs'].shape)  # [64, 52, 6]
         
         self.reg_term = None
         if self.gaussian_latent and self.anchors_mode != 'none':
-                B, N, E = out_embeds['obj_embeds'].shape  # [N, num_cls, E]
-                mean, logvar = out_embeds['obj_embeds'][:, :, :int(E/2)], out_embeds['obj_embeds'][:, :, int(E/2):]  # [N, num_cls, E]
-                # sampling
-                std = torch.exp(0.5*logvar)
-                eps = torch.randn_like(std)
-                out_embeds['obj_embeds'] = mean + eps*std
-                out_embeds['obj_embeds'] = torch.cat((out_embeds['obj_embeds'], out_embeds['obj_embeds']), dim=-1)
-                self.reg_term = (mean**2 + logvar.exp() - logvar).mean() - 1
-                factor = mean.shape[-1] / batch['obj_fts'].shape[2:].numel()  # 1024*6
-                self.reg_term *= factor
+            B, N, E = out_embeds['obj_embeds'].shape  # [N, num_cls, E]
+            mean, logvar = out_embeds['obj_embeds'][:, :, :int(E/2)], out_embeds['obj_embeds'][:, :, int(E/2):]  # [N, num_cls, E]
+            # sampling
+            std = torch.exp(0.5*logvar)
+            eps = torch.randn_like(std)
+            out_embeds['obj_embeds'] = mean + eps*std
+            out_embeds['obj_embeds'] = torch.cat((out_embeds['obj_embeds'], out_embeds['obj_embeds']), dim=-1)
+            self.reg_term = (mean**2 + logvar.exp() - logvar).mean() - 1
+            # factor = mean.shape[-1] / batch['obj_fts'].shape[2:].numel()  # 1024*6
+            factor = 1
+            self.reg_term *= factor
 
         if self.anchors_mode == 'cot':
             if self.cot_type == "cross":
@@ -208,7 +255,15 @@ class ReferIt3DNet(nn.Module):
                 AUX_LOGITS.masked_fill_(repeated_mask.logical_not(), -float('inf'))
                 trg_pass = torch.argmax(AUX_LOGITS, dim=-1)  # [B, anchors_length+1]
                 sampled_embd = vector_gather(parallel_embd, trg_pass)  # [B, L, E] --> [B, anchors_length+1, E]
-                cot_out = self.cot_decoder(out_embeds['obj_embeds'].permute(1, 0, 2), sampled_embd.permute(1, 0, 2)).permute(1, 0, 2)  # [B, L, E]
+                if self.config.losses.cot_teacher_loss:
+                    sampled_embd_mask = torch.ones((sampled_embd.shape[0], sampled_embd.shape[1]), dtype=torch.bool, device=sampled_embd.device)
+                    cot_out_embeds = self.cot_decoder(sampled_embd, sampled_embd_mask,
+                                                      out_embeds['obj_embeds'], batch['obj_locs'], batch['obj_masks'],
+                                                      output_attentions=output_attentions, output_hidden_states=output_hidden_states,) 
+                    cot_out = cot_out_embeds['obj_embeds']
+                else:
+                    cot_out = self.cot_decoder(out_embeds['obj_embeds'].permute(1, 0, 2), sampled_embd.permute(1, 0, 2), 
+                                            tgt_key_padding_mask=batch['obj_masks'].logical_not()).permute(1, 0, 2)  # [B, L, E]
                 og3d_logits = self.og3d_head(cot_out).permute(0, 2, 1)  # [B, L, E] --> [B, L, anchors_length+1] --> [B, anchors_length+1, L]
                 og3d_logits.masked_fill_(repeated_mask.logical_not(), -float('inf'))
             else:
@@ -220,12 +275,14 @@ class ReferIt3DNet(nn.Module):
             #og3d_logits.masked_fill_(repeated_mask.logical_not(), -float('inf'))
         else:
             AUX_LOGITS = None
-            og3d_logits = self.og3d_head(out_embeds['obj_embeds']).squeeze(2)  # [128, L]
+            og3d_logits = self.og3d_head(out_embeds['obj_embeds']).squeeze(2)  # [B, L]
             og3d_logits.masked_fill_(batch['obj_masks'].logical_not(), -float('inf'))
         result = {
             'og3d_logits': og3d_logits,
         }
         result['AUX_LOGITS'] = AUX_LOGITS
+        if self.config.losses.cot_teacher_loss:
+            result['sampled_embd_mask'] = sampled_embd_mask
 
         self.distractor_aux_logits = None
         if self.distractor_aux_loss_flag and (self.anchors_mode != 'none'):
@@ -234,8 +291,13 @@ class ReferIt3DNet(nn.Module):
         if output_attentions:
             result['all_cross_attns'] = out_embeds['all_cross_attns']
             result['all_self_attns'] = out_embeds['all_self_attns']
+            if self.config.losses.cot_teacher_loss:
+                result['cot_all_cross_attns'] = cot_out_embeds['all_cross_attns']
+                result['cot_all_self_attns'] = cot_out_embeds['all_self_attns']
         if output_hidden_states:
             result['all_hidden_states'] = out_embeds['all_hidden_states']
+            if self.config.losses.cot_teacher_loss:
+                result['cot_all_hidden_states'] = cot_out_embeds['all_hidden_states']
         
         if self.config.losses.obj3d_clf > 0:
             result['obj3d_clf_logits'] = self.obj3d_clf_head(out_embeds['obj_embeds'])
@@ -244,12 +306,23 @@ class ReferIt3DNet(nn.Module):
         if self.config.losses.obj3d_clf_pre > 0:
             result['obj3d_clf_pre_logits'] = self.obj3d_clf_pre_head(obj_embeds)
         if self.config.losses.txt_clf > 0:
-            result['txt_clf_logits'] = self.txt_clf_head(txt_embeds[:, 0])
+            if self.predict_lang_anchors:
+                AUX_LANG_LOGITS = self.txt_clf_head(txt_embeds[:, 0])
+                AUX_LANG_LOGITS = AUX_LANG_LOGITS.contiguous().view(-1, self.num_obj_classes, self.lang_out).permute(0, 2, 1)  # [B, trg_seq_length, num_cls]
+                LANG_LOGITS = self.language_trans(AUX_LANG_LOGITS.permute(1, 0, 2)).permute(1, 0, 2)  # [trg_seq_length, B, num_cls] --> [B, trg_seq_length, num_cls]
+                #LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.num_obj_classes*self.lang_out)  # [B, num_cls, trg_seq_length] --> [B, num_cls*trg_seq_length]
+                result['txt_clf_logits_aux'] = AUX_LANG_LOGITS
+                result['txt_clf_logits'] = LANG_LOGITS
+            else:
+                result['txt_clf_logits'] = self.txt_clf_head(txt_embeds[:, 0])
+                #result['txt_clf_logits_aux'] = None
         
         if compute_loss:
             losses = self.compute_loss(result, batch)
             return result, losses
         else:
+            if self.predict_lang_anchors and False:
+                result['txt_clf_logits'] = result['txt_clf_logits'].contiguous().view(-1, self.lang_out, self.num_obj_classes)[:, -1]
             if result['AUX_LOGITS'] == None:
                 result.pop('AUX_LOGITS')  # delete it from dict
         
@@ -265,19 +338,28 @@ class ReferIt3DNet(nn.Module):
                 mul_w = 1
                 if i == self.max_num_anchors:  # the main target
                     mul_w = self.tgt_mul_w
+                #mul_w = 0  # TODO: Eslam should remove this one
                 og3d_loss += F.cross_entropy(result['og3d_logits'][:, i], trg_pass[:, i]) * mul_w
-            trg_pass_reshaped = trg_pass.reshape(-1)  # [B*trg_seq_length]
+            #trg_pass_reshaped = trg_pass.reshape(-1)  # [B*trg_seq_length]
             """
             LOGITS_reshaped = result['og3d_logits'].reshape(-1, result['og3d_logits'].shape[2])  # [B*trg_seq_length, L]
             og3d_loss = F.cross_entropy(LOGITS_reshaped, trg_pass_reshaped)
             """
-            result['og3d_logits'] = result['og3d_logits'][:, -1, :]
+            # result['og3d_logits'] = result['og3d_logits'][:, -1, :]
             if self.reg_term is not None:
                 total_loss += self.reg_term
             if self.distractor_aux_logits is not None:
                 total_loss += self.distractor_aux_bce(self.distractor_aux_logits, batch['distractor_mask'])
             if result['AUX_LOGITS'] != None:
-                total_loss += F.cross_entropy(result['AUX_LOGITS'].reshape(-1, result['AUX_LOGITS'].shape[2]), trg_pass_reshaped)
+                # print("AUX_LOGITS = ", result['AUX_LOGITS'].shape)  # [64, 2, 80]
+                for i in range(trg_pass.shape[-1]):
+                    mul_w = 1
+                    if i == self.max_num_anchors:  # the main target
+                        mul_w = self.tgt_mul_w
+                    #mul_w = 0  # TODO: Eslam should remove this one
+                    total_loss += F.cross_entropy(result['AUX_LOGITS'][:, i], trg_pass[:, i]) * mul_w
+                #total_loss += F.cross_entropy(result['AUX_LOGITS'].reshape(-1, result['AUX_LOGITS'].shape[2]), trg_pass_reshaped)
+                #total_loss += 0  # TODO: Eslam should remove this one
             else:
                 result.pop('AUX_LOGITS')  # delete it from dict
         else:
@@ -312,9 +394,22 @@ class ReferIt3DNet(nn.Module):
             total_loss += losses['obj3d_reg']
 
         if self.config.losses.txt_clf > 0:
-            txt_clf_loss = F.cross_entropy(
-                result['txt_clf_logits'], batch['tgt_obj_classes'],  reduction='mean'
-            )
+            if self.predict_lang_anchors:
+                AUX_LANG_LOGITS = result['txt_clf_logits_aux']
+                LANG_LOGITS = result['txt_clf_logits']   # [N, trg_seq_length, num_cls]
+                
+                #LANG_LOGITS = LANG_LOGITS.contiguous().permute(0, 2, 1).reshape(-1, self.num_obj_classes)  # [N*trg_seq_length, num_cls]
+                LANG_LOGITS = LANG_LOGITS.contiguous().reshape(-1, self.num_obj_classes)  # [N*trg_seq_length, num_cls]
+                lang_tgt = torch.cat((batch['anchor_objs_classes'], batch['tgt_obj_classes'].unsqueeze(-1)), dim=-1).reshape(-1).long()  # [N*trg_seq_length]
+                txt_clf_loss = F.cross_entropy(LANG_LOGITS, lang_tgt, reduction='mean')
+                if AUX_LANG_LOGITS != None:
+                    AUX_LANG_LOGITS = AUX_LANG_LOGITS.contiguous().reshape(-1, self.num_obj_classes)  # [N*trg_seq_length, num_cls]
+                    txt_clf_loss += F.cross_entropy(AUX_LANG_LOGITS, lang_tgt, reduction='mean')
+                
+                result['txt_clf_logits_aux'] = AUX_LANG_LOGITS
+                result['txt_clf_logits'] = LANG_LOGITS.contiguous().view(-1, self.lang_out, self.num_obj_classes)[:, -1]
+            else:
+                txt_clf_loss = F.cross_entropy(result['txt_clf_logits'], batch['tgt_obj_classes'], reduction='mean')
             losses['txt_clf'] = txt_clf_loss * self.config.losses.txt_clf
             total_loss += losses['txt_clf']
 

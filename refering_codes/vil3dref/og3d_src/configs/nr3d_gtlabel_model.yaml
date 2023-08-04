@@ -50,11 +50,13 @@ model:
     num_layers: 4
     obj_loc_encoding: same_all # same_0, same_all, diff_all
     pairwise_rel_type: center # center, vertical_bottom, mlp
+    dim_feedforward: 2048
   losses:
     obj3d_clf: 1
     obj3d_clf_pre: 1
     obj3d_reg: 0
     txt_clf: 1
+    cot_teacher_loss: false
 
 dataset:
   is_nr3d: true
@@ -75,11 +77,13 @@ dataset:
 cot:
   anchors: 'cot'
   cot_type: 'cross'
-  predict_lang_anchors: false
+  predict_lang_anchors: true
   train_data_percent: 1.0
   max_num_anchors: 7
   target_aug_percentage: 0
-  distractor_aux_loss_flag: false
-  data_csv_pth: "/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_ref_paraphrases_num_anchors.csv"
-  tgt_mul_w: 5
+  distractor_aux_loss_flag: true
+  #data_csv_pth: "/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_ref_paraphrases_num_anchors.csv"
+  data_csv_pth: "/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3D_with_TRUE_GT.csv"
+  tgt_mul_w: 1
   gaussian_latent: false
+  anchors_ids_type: "GT"  # [pseudoWneg_old, pseudoWneg, pseudoWOneg, ourPathGTids, GT]

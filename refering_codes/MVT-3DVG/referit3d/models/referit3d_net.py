@@ -58,6 +58,7 @@ class ReferIt3DNet_transformer(nn.Module):
         self.lang_filter_objs = args.lang_filter_objs
         self.gaussian_latent = args.gaussian_latent
         self.distractor_aux_loss_flag = args.distractor_aux_loss_flag
+        self.obj_cls_post = args.obj_cls_post
         self.class_to_idx = class_to_idx
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.cls_names = np.array(list(self.idx_to_class.values()))
@@ -99,7 +100,7 @@ class ReferIt3DNet_transformer(nn.Module):
                                                    num_layers=self.decoder_layer_num)
 
         # Classifier heads
-        if self.is_nr:
+        if self.is_nr and self.predict_lang_anchors:
             self.parallel_language_emedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                             nn.ReLU(), nn.Dropout(self.dropout_rate))
             self.language_clf = nn.Linear(self.inner_dim, self.n_obj_classes*self.lang_out)
@@ -131,6 +132,10 @@ class ReferIt3DNet_transformer(nn.Module):
         if self.gaussian_latent:
             self.inner_dim = int(self.inner_dim / 2)
 
+        if self.obj_cls_post:
+            self.obj_clf_post = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim//2), nn.ReLU(), nn.LayerNorm(self.inner_dim//2, eps=1e-12), 
+                                              nn.Dropout(self.dropout_rate), nn.Linear(self.inner_dim//2, self.n_obj_classes))
+            
         if self.anchors_mode == 'cot':
             if self.cot_type == "cross":
                 self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
@@ -150,6 +155,12 @@ class ReferIt3DNet_transformer(nn.Module):
                 self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                         nn.ReLU(), nn.Dropout(self.dropout_rate),
                                                         nn.Linear(self.inner_dim, 1))
+            elif self.cot_type == "self_cons":
+                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=16, dim_feedforward=512,
+                                                                                                  activation="gelu"), num_layers=1)
+                self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
+                                                        nn.ReLU(), nn.Dropout(self.dropout_rate),
+                                                        nn.Linear(self.inner_dim, self.ref_out))
         else:
             self.object_language_clf = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                      nn.ReLU(), nn.Dropout(self.dropout_rate),
@@ -212,7 +223,8 @@ class ReferIt3DNet_transformer(nn.Module):
         boxs = torch.stack(boxs, dim=1)
         return input_points, boxs
 
-    def compute_loss(self, batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS=None, AUX_LANG_LOGITS=None, distractor_aux_logits=None):
+    def compute_loss(self, batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS=None, AUX_LANG_LOGITS=None,
+                      distractor_aux_logits=None, CLASS_LOGITS_post=None):
         """
         LOGITS: [N, trg_seq_length, 52]
         """
@@ -248,7 +260,10 @@ class ReferIt3DNet_transformer(nn.Module):
             referential_loss = self.logit_loss(LOGITS, batch['target_pos'])
             trg_pass = None
         
+        # Obj Cls Loss:
         obj_clf_loss = self.class_logits_loss(CLASS_LOGITS.transpose(2, 1), batch['class_labels'])
+        if self.obj_cls_post:
+            obj_clf_loss += self.class_logits_loss(CLASS_LOGITS_post.transpose(2, 1), batch['class_labels'])
         
         if self.predict_lang_anchors:
             LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, self.lang_out).permute(0, 2, 1).reshape(-1, self.n_obj_classes)  # [N*trg_seq_length, num_cls]
@@ -315,7 +330,7 @@ class ReferIt3DNet_transformer(nn.Module):
         lang_infos = self.language_encoder(**lang_tokens)[0]  # [128, 20, 768]
 
         # <LOSS>: lang_cls
-        if self.is_nr:
+        if self.is_nr and self.predict_lang_anchors:
             lang_parallel_embd = self.parallel_language_emedding(lang_infos[:, 0])
             AUX_LANG_LOGITS = self.language_clf(lang_parallel_embd)  # [B, num_cls*trg_seq_length]
             sampled_embd = AUX_LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, self.lang_out).permute(0, 2, 1)  # [N, trg_seq_length, num_cls]
@@ -379,6 +394,11 @@ class ReferIt3DNet_transformer(nn.Module):
             factor = mean.shape[-1] / obj_points.shape[2:].numel()  # 1024*6
             self.reg_term *= factor
 
+        if self.obj_cls_post:
+            CLASS_LOGITS_post = self.obj_clf_post(agg_feats)
+        else:
+            CLASS_LOGITS_post = None
+
         if self.anchors_mode == "cot":
             if self.cot_type == "cross":
                 parallel_embd = self.parallel_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]
@@ -398,6 +418,11 @@ class ReferIt3DNet_transformer(nn.Module):
                 target_LOGITS = self.fc_out(cot_out).permute(0, 2, 1)  # [N, 52, E] --> [N, 52, 1] --> [N, 1, 52]
                 LOGITS = torch.cat((anchor_LOGITS, target_LOGITS), dim=1)  # [N, 2, 52]
                 AUX_LOGITS = None
+            elif self.cot_type == "self_cons":
+                AUX_LOGITS = None
+                cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), agg_feats.permute(1, 0, 2))  # [num_cls, N, E]
+                LOGITS = self.fc_out(cot_out).permute(1, 2, 0)  # [num_cls, N, E] --> [num_cls, N, anchors_length+1] --> [N, anchors_length+1, num_cls]
+
         elif self.anchors_mode == "parallel":
             cot_out = self.object_language_clf(agg_feats)  # [N, 52, E] --> [N, 52, trg_seq_length]
             LOGITS = cot_out.permute(0, 2, 1)  # [N, 52, trg_seq_length] --> [N, trg_seq_length, 52]
@@ -412,7 +437,7 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             distractor_aux_logits = None
         # <LOSS>: ref_cls
-        LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS, AUX_LANG_LOGITS, distractor_aux_logits)  # []
+        LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS, AUX_LANG_LOGITS, distractor_aux_logits, CLASS_LOGITS_post)  # []
         if self.anchors_mode != 'none':
             LOGITS = LOGITS[:, -1]
         

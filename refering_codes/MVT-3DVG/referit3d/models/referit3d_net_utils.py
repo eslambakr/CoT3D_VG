@@ -108,7 +108,7 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
-        if args.anchors == 'cot':
+        if args.anchors == 'cot' and (res['AUX_LOGITS'] is not None):
             predictions = torch.argmax(res['AUX_LOGITS'][:, -1], dim=1)
             guessed_correctly = torch.mean((predictions == batch['target_pos']).double()).item()
             ref_acc_mtr_aux_tgt.update(guessed_correctly, batch_size)
@@ -215,7 +215,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
-        if args.anchors == 'cot':
+        if args.anchors == 'cot' and (res['AUX_LOGITS'] is not None):
             predictions = torch.argmax(res['AUX_LOGITS'][:, -1], dim=1)
             guessed_correctly = torch.mean((predictions == batch['target_pos']).double()).item()
             ref_acc_mtr_aux_tgt.update(guessed_correctly, batch_size)

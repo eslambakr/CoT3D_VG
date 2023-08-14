@@ -25,7 +25,7 @@ class ListeningDataset(Dataset):
                  class_to_idx=None, object_transformation=None, visualization=False,
                  anchors_mode="cot", max_anchors=2, predict_lang_anchors=False, 
                  shuffle_objects=None, pc_transforms=None, textaug_paraphrase_percentage=None, shuffle_objects_percentage=None,
-                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False):
+                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False, anchors_ids_type=None):
 
         self.references = references
         self.scans = scans
@@ -44,6 +44,7 @@ class ListeningDataset(Dataset):
         self.textaug_paraphrase_percentage = textaug_paraphrase_percentage
         self.target_aug_percentage = target_aug_percentage
         self.distractor_aux_loss_flag = distractor_aux_loss_flag
+        self.anchors_ids_type = anchors_ids_type
         self.is_train = is_train
         with open('/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/unique_rel_map_dict_opposite.json') as f:
             self.opposite_dict = json.load(f)
@@ -88,9 +89,22 @@ class ListeningDataset(Dataset):
         path = None
         self.anchors_len = 0
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
-            self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
             if is_nr3d:
-                path = ref['path']
+                if self.anchors_ids_type == "pseudoWneg" or self.anchors_ids_type == "pseudoWneg_old":
+                    self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
+                    path = ref['path']
+                elif self.anchors_ids_type == "pseudoWOneg":
+                    self.anchors_ids = self.get_anchor_ids(ref['ours_with_neg_ids'])
+                    path = ref['our_neg_anchor_names']
+                elif self.anchors_ids_type == "ourPathGTids":
+                    self.anchors_ids = self.get_anchor_ids(ref['our_gt_id'])
+                    path = ref['path']
+                elif self.anchors_ids_type == "GT":
+                    self.anchors_ids = self.get_anchor_ids(ref['true_gt_id'])
+                    path = ref['true_gt_anchor_names']
+            else:
+                self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
+                
                 if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
                     path.reverse()
                     target = scan.three_d_objects[self.anchors_ids[0]]  # [0] as we are sure it is only one anchor
@@ -427,7 +441,8 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    textaug_paraphrase_percentage=args.textaug_paraphrase_percentage,
                                    target_aug_percentage=args.target_aug_percentage,
                                    is_train=split=='train',
-                                   distractor_aux_loss_flag=args.distractor_aux_loss_flag)
+                                   distractor_aux_loss_flag=args.distractor_aux_loss_flag,
+                                   anchors_ids_type=args.anchors_ids_type)
 
         seed = None
         if split == 'test':

@@ -143,9 +143,10 @@ if __name__ == '__main__':
         if not args.label_lang_sup:
             param_list.append({'params': model.obj_clf.parameters(), 'lr': args.init_lr})
         if args.anchors == 'cot':
-            param_list.append({'params': model.parallel_embedding.parameters(), 'lr': args.init_lr})
-            param_list.append({'params': model.object_language_clf_parallel.parameters(), 'lr': args.init_lr})
             param_list.append({'params': model.fc_out.parameters(), 'lr': args.init_lr})
+            if args.cot_type != "self_cons":
+                param_list.append({'params': model.parallel_embedding.parameters(), 'lr': args.init_lr})
+                param_list.append({'params': model.object_language_clf_parallel.parameters(), 'lr': args.init_lr})
 
     optimizer = optim.Adam(param_list, lr=args.init_lr)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [40, 50, 60, 70, 80, 90], gamma=0.65)

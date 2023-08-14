@@ -64,7 +64,7 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--init-lr', type=float, default=0.0005, help='learning rate for training.')
     parser.add_argument('--anchors', type=str, default='none', choices=['parallel', 'cot', 'none'],
                         help='train using all anchors in parallel, or sequential/CoT, or with no anchors')
-    parser.add_argument('--cot_type', type=str, default='cross', choices=['cross', 'causal'],
+    parser.add_argument('--cot_type', type=str, default='cross', choices=['cross', 'causal', 'self_cons'],
                         help='cross:  transformer decoder will refine all inputs based even on the future predections\
                               causal: transformer decoder will refine inputs based on causal manner(only previous predictions)')
     parser.add_argument('--predict_lang_anchors', type=str2bool, default=False)
@@ -84,6 +84,11 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--target_aug_percentage', type=int, default=0,  help="swap target with anchor in case of 1 anchor only exist")
     parser.add_argument('--gaussian_latent', type=str2bool, default=False,  help="learning gaussian shared latent representation before heads")
     parser.add_argument('--distractor_aux_loss_flag', type=str2bool, default=False,  help="Add head to predict which objs are distractors")
+    parser.add_argument('--anchors_ids_type', type=str, default=False,  help="Four options are available: [pseudoWneg_old, pseudoWneg, pseudoWOneg, ourPathGTids, GT]\
+                         1- pseudo w negatives old file. 2- pseudo w negatives. 3- pseudo w/o negatives. \
+                         4- our path combined with GT boxes ids. 5- GT path combined with GT boxes ids.")
+    parser.add_argument('--obj_cls_post', type=str2bool, default=False, 
+                        help="If activated this means we will add another cls head after multi-modal transformer. We have done this to mimic VIL.")
 
     #
     # Model arguments

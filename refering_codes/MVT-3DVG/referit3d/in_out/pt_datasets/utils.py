@@ -173,6 +173,7 @@ def read_csv_as_list_dict(csv_pth):
     return rows
 
 
+# This function is not used! #TODO: Eslam: I should clean it
 def clean_obj_path(rows):
     print("Cleaning the objects path......")
     for row in tqdm(rows):
@@ -185,6 +186,8 @@ def clean_obj_path(rows):
     print("Finish the cleaning.")
     return rows
     
+
+# This function is not used! #TODO: Eslam: I should clean it
 def get_num_objs_nr3d(csv_pth):
     rows = read_csv_as_list_dict(csv_pth)
     rows = clean_obj_path(rows)
@@ -196,11 +199,11 @@ def get_num_objs_nr3d(csv_pth):
     return num_objs_per_sentences
 
 
-def get_logical_pth_lang(data_dict):
+def get_logical_pth_lang(data_dict, key):
     """
     Convert the string into readable list
     """
-    for idx, row in enumerate(data_dict["path"]):
+    for idx, row in enumerate(data_dict[key]):
         clean_objs = []
         if "'" in row:
             objects = row.split(',')
@@ -209,7 +212,7 @@ def get_logical_pth_lang(data_dict):
                 if '*' in obj:
                     obj = obj[1:]
                 clean_objs.append(obj)
-        data_dict["path"][idx] = clean_objs
+        data_dict[key][idx] = clean_objs
 
     return data_dict
 

@@ -20,12 +20,57 @@ from transformers import DistilBertTokenizer, DistilBertModel
 from ..three_d_object import ThreeDObject
 
 
+def unique_items_in_list(list1):
+    list_set = set(list1)
+    unique_list = (list(list_set))
+    return unique_list
+
+def get_consecutive_identical_elements(anchor_name_id_list):
+    """
+    anchor_name_id_list: list of set, where each set consists of: ('anchor_name', anchor_id)
+    """
+    new_anchor_name_id_list = []
+    idx = 0
+    while idx < len(anchor_name_id_list):  # loop on the whole path
+        list_ids_per_name = [anchor_name_id_list[idx][1]]
+        j = idx+1
+        while j < len(anchor_name_id_list):  # loop on the rest of the path
+            if anchor_name_id_list[idx][0] == anchor_name_id_list[j][0]:
+                list_ids_per_name.append(anchor_name_id_list[j][1])
+                j += 1
+            else:
+                break
+        new_anchor_name_id_list.append((anchor_name_id_list[idx][0], unique_items_in_list(list_ids_per_name)))
+        idx = j
+    return new_anchor_name_id_list
+
+
+def get_consecutive_identical_elements_old(in_list):
+    consecutive_mask = np.zeros(len(in_list))
+    out = {'new_list': [], 'identical_idx': {}}  # dict --> (word: it's identical idxs)
+    for idx in range(0, len(in_list) - 1):
+        if in_list[idx] not in out['identical_idx'].keys():
+            out['identical_idx'][in_list[idx]] = []
+        if in_list[idx] == in_list[idx + 1]:
+            out['identical_idx'][in_list[idx]].append(idx)
+            out['identical_idx'][in_list[idx]].append(idx+1)
+            consecutive_mask[idx] = 1
+            consecutive_mask[idx+1] = 1
+    
+    for word in out['identical_idx'].keys():
+        out['identical_idx'][word] = unique_items_in_list(out['identical_idx'][word])
+    
+    out['new_list'] = out['identical_idx'].keys()
+    return out
+
+
 class ListeningDataset(Dataset):
     def __init__(self, references, scans, vocab, max_seq_len, points_per_object, max_distractors,
                  class_to_idx=None, object_transformation=None, visualization=False,
                  anchors_mode="cot", max_anchors=2, predict_lang_anchors=False, 
                  shuffle_objects=None, pc_transforms=None, textaug_paraphrase_percentage=None, shuffle_objects_percentage=None,
-                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False, anchors_ids_type=None):
+                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False, anchors_ids_type=None, scanrefer=False,
+                 feedGTPath=False, multicls_multilabel=False, max_test_objects=None, include_anchor_distractors=False):
 
         self.references = references
         self.scans = scans
@@ -46,6 +91,11 @@ class ListeningDataset(Dataset):
         self.distractor_aux_loss_flag = distractor_aux_loss_flag
         self.anchors_ids_type = anchors_ids_type
         self.is_train = is_train
+        self.scanrefer = scanrefer
+        self.feedGTPath = feedGTPath
+        self.multicls_multilabel = multicls_multilabel
+        self.max_test_objects = max_test_objects
+        self.include_anchor_distractors = include_anchor_distractors
         with open('/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/unique_rel_map_dict_opposite.json') as f:
             self.opposite_dict = json.load(f)
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
@@ -76,6 +126,11 @@ class ListeningDataset(Dataset):
             # If anchor_ids is not in the expected format, assume it's a single number
             anchor_ids = [int(anchor_ids)]
         return anchor_ids
+    
+    def get_scanrefer_anchor_ids(self, anchor_ids):
+        anchor_ids = [int(anchor_id) for anchor_id in anchor_ids]  # make sure they are ints
+        #anchor_ids = anchor_ids[:-1]  # drop the last item as we add the tgt at the end by mistake.
+        return anchor_ids
 
     def get_reference_data(self, index):
         target_augmented_flag = False
@@ -91,29 +146,34 @@ class ListeningDataset(Dataset):
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
             if is_nr3d:
                 if self.anchors_ids_type == "pseudoWneg" or self.anchors_ids_type == "pseudoWneg_old":
-                    self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
+                    self.anchors_ids = ref['anchor_ids']
                     path = ref['path']
                 elif self.anchors_ids_type == "pseudoWOneg":
-                    self.anchors_ids = self.get_anchor_ids(ref['ours_with_neg_ids'])
+                    self.anchors_ids = ref['ours_with_neg_ids']
                     path = ref['our_neg_anchor_names']
                 elif self.anchors_ids_type == "ourPathGTids":
-                    self.anchors_ids = self.get_anchor_ids(ref['our_gt_id'])
+                    self.anchors_ids = ref['our_gt_id']
                     path = ref['path']
                 elif self.anchors_ids_type == "GT":
-                    self.anchors_ids = self.get_anchor_ids(ref['true_gt_id'])
+                    self.anchors_ids = ref['true_gt_id']
                     path = ref['true_gt_anchor_names']
             else:
-                self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
-                
-                if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
-                    path.reverse()
-                    target = scan.three_d_objects[self.anchors_ids[0]]  # [0] as we are sure it is only one anchor
-                    self.anchors_ids = [ref['target_id']]
-                    #mask = self.unique_rel_df[self.unique_rel_df.utterance.str.lower().isin([ref['utterance']])]
-                    relation = sample(relation_synonyms[self.opposite_dict[ref['relation']]], 1)[0]
-                    #relation = sample(relation_synonyms[self.opposite_dict[mask.relation.values[0]]], 1)[0]
-                    tokens = path[-1] + " " + relation + " " + path[0]
-                    target_augmented_flag = True
+                self.anchors_ids = ref['anchor_ids']
+            
+            if self.scanrefer:
+                self.anchors_ids = self.get_scanrefer_anchor_ids(self.anchors_ids)
+            else:
+                self.anchors_ids = self.get_anchor_ids(self.anchors_ids)
+
+            if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
+                path.reverse()
+                target = scan.three_d_objects[self.anchors_ids[0]]  # [0] as we are sure it is only one anchor
+                self.anchors_ids = [ref['target_id']]
+                #mask = self.unique_rel_df[self.unique_rel_df.utterance.str.lower().isin([ref['utterance']])]
+                relation = sample(relation_synonyms[self.opposite_dict[ref['relation']]], 1)[0]
+                #relation = sample(relation_synonyms[self.opposite_dict[mask.relation.values[0]]], 1)[0]
+                tokens = path[-1] + " " + relation + " " + path[0]
+                target_augmented_flag = True
 
             anchors = []
             for anchor_id in self.anchors_ids:
@@ -134,8 +194,51 @@ class ListeningDataset(Dataset):
 
             self.anchors_len = len(anchors)+1 if len(anchors) < self.max_anchors else len(anchors)  # +1 as we will add only one empty anchor later
 
-        # sega_update: 使用原始的token
-        #tokens = np.array(self.vocab.encode(ref['tokens'], self.max_seq_len), dtype=np.long)
+            # Deal with the problem as a multi-class multi labels problem:
+            # so we will convert the GT to one-hot encodings and remove the duplicates from the path and assign the whole 
+            if self.multicls_multilabel:
+                anchors_path = path[:-1]  # exclude the target for now
+                assert len(anchors_path) == len(self.anchors_ids)
+                anchor_name_id_list = []
+                for i, anchor_id in enumerate(self.anchors_ids):
+                    anchor_name_id_list.append((anchors_path[i], anchor_id))
+                # e.g.: [('nightstand', 20), ('bed', 14), ('bed', 13)] --> [('nightstand', [20]), ('bed', [14, 13])]
+                #print("Before --> ", anchor_name_id_list)
+                anchor_name_id_list = get_consecutive_identical_elements(anchor_name_id_list)
+                #print("After --> ", anchor_name_id_list)
+                # Create new anchors:
+                anchor_name_id_pos_list = []
+                anchors = []
+                for i in range(len(anchor_name_id_list)):
+                    anchors_pos_in_anchors = []
+                    for anchor_id in anchor_name_id_list[i][1]:
+                        anchors.append(scan.three_d_objects[anchor_id])
+                        anchors_pos_in_anchors.append(len(anchors)-1)
+                    anchor_name_id_pos_list.append((anchor_name_id_list[i][0], anchor_name_id_list[i][1], anchors_pos_in_anchors))
+
+                # Update path and anchors:
+                new_len_anchors = [len(dumy_item[1]) for dumy_item in anchor_name_id_pos_list]
+                new_len_anchors = sum(new_len_anchors)
+                anchors_path = [dumy_item[0] for dumy_item in anchor_name_id_pos_list]
+                path = anchors_path + [path[-1]]
+                # Handle the case where we set max_anchors number to low number (< true path) --> Trim the path:
+                if len(anchor_name_id_pos_list) > self.max_anchors:
+                    anchor_name_id_pos_list = anchor_name_id_pos_list[:self.max_anchors]
+                    # trim the path
+                    trimmed_path = path[:self.max_anchors]  # Get max_num of anchor
+                    trimmed_path.append(path[-1])  # Adding the target 
+                    path = trimmed_path
+
+                    # trim the anchors
+                    new_len_anchors = [len(dumy_item[1]) for dumy_item in anchor_name_id_pos_list]
+                    new_len_anchors = sum(new_len_anchors)
+                    anchors = anchors[:new_len_anchors]
+
+                # Update anchor length:
+                self.anchors_len = new_len_anchors+1 if len(anchor_name_id_pos_list) < self.max_anchors else new_len_anchors  # +1 as we will add only one empty anchor later
+
+                self.anchor_name_id_pos_list = anchor_name_id_pos_list
+            
         if not target_augmented_flag:
             if self.textaug_paraphrase_percentage and self.is_train:
                 if flipcoin(percent=self.textaug_paraphrase_percentage) and (len(ref['paraphrases'])):
@@ -146,11 +249,9 @@ class ListeningDataset(Dataset):
             else:
                 ori_tokens = ref['tokens']
                 tokens = " ".join(ori_tokens)
-        # tokens = self.vocab(sen).input_ids
-        # print(len(tokens))
-        # tokens = np.array(tokens)
-        # tokens = np.array([102]*(self.max_seq_len + 2 + self.max_context_size * 2))
-        # tokens[:min(self.max_seq_len + 2, len(emb))] = emb[:min(self.max_seq_len + 2, len(emb))]
+
+        if self.feedGTPath:
+            self.cot_path_tokens = " ".join(path)
 
         return scan, target, tokens, is_nr3d, scan_id, anchors, path
 
@@ -163,7 +264,7 @@ class ListeningDataset(Dataset):
         already_included = [target_label]
 
         # Add anchors' distractors:
-        if self.anchors_mode != 'none' or self.predict_lang_anchors:
+        if (self.anchors_mode != 'none' or self.predict_lang_anchors) and self.include_anchor_distractors:
             anchor_labels = [anchor.instance_label for anchor in anchors]
             anchors_distractors = []
             for anchor in anchors:
@@ -186,7 +287,7 @@ class ListeningDataset(Dataset):
 
     def __getitem__(self, index):
         res = dict()
-        scan, target, tokens, is_nr3d, scan_id, anchors, path = self.get_reference_data(index)  
+        scan, target, tokens, is_nr3d, scan_id, anchors, path = self.get_reference_data(index)
         # Make a context of distractors
         context = self.prepare_distractors(scan, target, anchors)
             
@@ -197,10 +298,12 @@ class ListeningDataset(Dataset):
             # Add target object in 'context' list
             target_pos = poses[0]
             context.insert(target_pos, target)
+            if self.multicls_multilabel:
+                target_pos = np.zeros((1, self.max_test_objects))
+                target_pos[0, poses[0]] = 1
+
             # Add anchors in 'context' list
             anchors_pos = poses[1:]
-            #print("---- anchors_pos = ", anchors_pos)
-            
             for anchor_i, anchor in enumerate(anchors):
                 context.insert(anchors_pos[anchor_i], anchor)
             # pad with dummy anchor which will be replaced by zeros later.
@@ -301,15 +404,22 @@ class ListeningDataset(Dataset):
                 for anchor_i in range(len(anchors), self.max_anchors):
                     res['anchor_classes'][anchor_i] = self.class_to_idx['no_obj']
             # Anchors poses for referring head
-            anchors_pos_with_no_obj = []
-            i = 0
-            for anchor_id in self.anchors_ids:
-                if anchor_id == -1:
-                    anchors_pos_with_no_obj.append(anchors_pos[-1])
-                else:
-                    anchors_pos_with_no_obj.append(anchors_pos[i])
-                    i += 1
-            res['anchors_pos'] = np.array(anchors_pos_with_no_obj + [anchors_pos[-1]]*(self.max_anchors-len(self.anchors_ids)))
+            if self.multicls_multilabel:
+                res['anchors_pos'] = np.zeros((self.max_anchors, self.max_test_objects))
+                for i in range(len(self.anchor_name_id_pos_list)):  # loop on true length of anchors
+                    for pos_j in self.anchor_name_id_pos_list[i][2]:  # loop on the position in anchors to get positions in context
+                        pos_in_context = anchors_pos[pos_j]
+                        res['anchors_pos'][i, pos_in_context] = 1
+            else:
+                anchors_pos_with_no_obj = []
+                i = 0
+                for anchor_id in self.anchors_ids:
+                    if anchor_id == -1:
+                        anchors_pos_with_no_obj.append(anchors_pos[-1])
+                    else:
+                        anchors_pos_with_no_obj.append(anchors_pos[i])
+                        i += 1
+                res['anchors_pos'] = np.array(anchors_pos_with_no_obj + [anchors_pos[-1]]*(self.max_anchors-len(self.anchors_ids)))
 
         if self.distractor_aux_loss_flag:
             res['distractor_mask'] = np.zeros(len(res['objects']))
@@ -321,6 +431,9 @@ class ListeningDataset(Dataset):
         res['is_nr3d'] = is_nr3d
         res['box_info'] = box_info
         res['box_corners'] = box_corners
+        if self.feedGTPath:
+            res['cot_path_tokens'] = self.cot_path_tokens
+        
 
         if self.visualization:
             distrators_pos = np.zeros((50))  # 6 is the maximum context size we used in dataset collection
@@ -384,7 +497,8 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
             if args.train_data_percent < 1:
                 # Filter the samples which don't contain the max_num_anchors
                 if 'nr' in args.referit3D_file:
-                    d_set = d_set[d_set['num_anchors'] <= max_anchors]
+                    if len(d_set[d_set['num_anchors'] <= max_anchors]) >= (args.train_data_percent*org_training_len):
+                        d_set = d_set[d_set['num_anchors'] <= max_anchors]
                     if args.target_aug_percentage and (args.train_data_percent==0.1) and (max_anchors==1):
                         unique_rel_df = pd.read_csv("/home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_unique_rel_anchor_data.csv")
                         d_set = pd.merge(d_set, unique_rel_df, how='inner', on=['utterance'], suffixes=('', '_y'))
@@ -392,7 +506,7 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                 extend = org_training_len/len(d_set)
                 print("-------- org_training_len = ", org_training_len, "   ", len(d_set))
             d_set = d_set.sample(frac=args.train_data_percent*extend)
-            print("-------- d_set = ", len(d_set))
+            print("-------- d_set after train_data_percent = ", len(d_set))
             if args.train_data_repeatation > 1:
                 d_set_repeated = pd.DataFrame(np.repeat(d_set.values, args.train_data_repeatation, axis=0))
                 d_set_repeated.columns = d_set.columns
@@ -403,7 +517,7 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
         ## this is a silly small bug -> not the minus-1.
 
         # if split == test remove the utterances of unique targets
-        if split == 'test':
+        if split == 'test' and (not args.scanrefer):
             def multiple_targets_utterance(x):
                 _, _, _, _, distractors_ids = decode_stimulus_string(x.stimulus_id)
                 return len(distractors_ids) > 0
@@ -442,7 +556,12 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    target_aug_percentage=args.target_aug_percentage,
                                    is_train=split=='train',
                                    distractor_aux_loss_flag=args.distractor_aux_loss_flag,
-                                   anchors_ids_type=args.anchors_ids_type)
+                                   anchors_ids_type=args.anchors_ids_type,
+                                   scanrefer=args.scanrefer,
+                                   feedGTPath=args.feedGTPath,
+                                   multicls_multilabel=args.multicls_multilabel,
+                                   max_test_objects=args.max_test_objects,
+                                   include_anchor_distractors=args.include_anchor_distractors)
 
         seed = None
         if split == 'test':

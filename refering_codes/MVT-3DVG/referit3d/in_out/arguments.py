@@ -89,6 +89,11 @@ def parse_arguments(notebook_options=None):
                          4- our path combined with GT boxes ids. 5- GT path combined with GT boxes ids.")
     parser.add_argument('--obj_cls_post', type=str2bool, default=False, 
                         help="If activated this means we will add another cls head after multi-modal transformer. We have done this to mimic VIL.")
+    parser.add_argument('--scanrefer', type=str2bool, default=False, help="Train on scanrefer dataset. So the loading part of the data will be changed.")
+    parser.add_argument('--feedGTPath', type=str2bool, default=False, help="Feed the GT logical path as an input to the model.")
+    parser.add_argument('--multicls_multilabel', type=str2bool, default=False, help="Remove duplicates from the path and deal with it as multi-labels.")
+    parser.add_argument('--remove_repeated_anchors', type=str2bool, default=False, help="Remove duplicates from the path and sample anchor_id to assign it.")
+    parser.add_argument('--include_anchor_distractors', type=str2bool, default=False, help="This flag determines whether we should include the anchors' distractors or not.")
 
     #
     # Model arguments

@@ -13,7 +13,7 @@ from termcolor import colored
 
 from referit3d.utils.tf_visualizer import Visualizer  # should be imported first (https://github.com/pytorch/pytorch/issues/30651)
 from referit3d.in_out.arguments import parse_arguments
-from referit3d.in_out.neural_net_oriented import load_scan_related_data, load_referential_data
+from referit3d.in_out.neural_net_oriented import load_scan_related_data, load_referential_data, load_scanrefer_referential_data
 from referit3d.in_out.neural_net_oriented import compute_auxiliary_data, trim_scans_per_referit3d_data
 from referit3d.in_out.pt_datasets.listening_dataset import make_data_loaders
 from referit3d.in_out.pt_datasets.utils import create_sr3d_classes_2_idx
@@ -64,10 +64,14 @@ if __name__ == '__main__':
     all_scans_in_dict, scans_split, class_to_idx = load_scan_related_data(args.scannet_file,
                                                                            add_no_obj=args.anchors != 'none' or args.predict_lang_anchors)
     is_nr = True if 'nr' in args.referit3D_file else False
-    if is_nr:
+    if is_nr or args.scanrefer:
         class_to_idx = create_sr3d_classes_2_idx(json_pth="referit3d/data/mappings/scannet_instance_class_to_semantic_class.json")
-    # Read the linguistic data of ReferIt3D
-    referit_data = load_referential_data(args, args.referit3D_file, scans_split)
+    if args.scanrefer:
+        # Read the linguistic data of ScanRefer
+        referit_data, scans_split = load_scanrefer_referential_data(args, args.referit3D_file, scans_split)
+    else:
+        # Read the linguistic data of ReferIt3D
+        referit_data = load_referential_data(args, args.referit3D_file, scans_split)
     # Prepare data & compute auxiliary meta-information.
     all_scans_in_dict = trim_scans_per_referit3d_data(referit_data, all_scans_in_dict)
     mean_rgb, vocab = compute_auxiliary_data(referit_data, all_scans_in_dict, args)

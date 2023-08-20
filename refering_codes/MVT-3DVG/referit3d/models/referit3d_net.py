@@ -63,6 +63,8 @@ class ReferIt3DNet_transformer(nn.Module):
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.cls_names = np.array(list(self.idx_to_class.values()))
         self.is_nr = True if 'nr' in args.referit3D_file else False
+        self.feedGTPath = args.feedGTPath
+        self.multicls_multilabel = args.multicls_multilabel
 
         if self.anchors_mode == "cot" or self.anchors_mode == "parallel":
             if self.is_nr:
@@ -92,6 +94,9 @@ class ReferIt3DNet_transformer(nn.Module):
 
         self.language_encoder = BertModel.from_pretrained(self.bert_pretrain_path)
         self.language_encoder.encoder.layer = BertModel(BertConfig()).encoder.layer[:self.encoder_layer_num]
+        if self.feedGTPath:
+            self.cot_path_language_encoder = BertModel.from_pretrained(self.bert_pretrain_path)
+            self.cot_path_language_encoder.encoder.layer = BertModel(BertConfig()).encoder.layer[:self.encoder_layer_num]
 
         self.refer_encoder = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim,
                                                                                     nhead=self.decoder_nhead_num,
@@ -177,8 +182,12 @@ class ReferIt3DNet_transformer(nn.Module):
 
         self.class_name_tokens = class_name_tokens
 
-        self.logit_loss = nn.CrossEntropyLoss()
-        self.logit_loss_aux = nn.CrossEntropyLoss()
+        if self.multicls_multilabel:
+            self.logit_loss = nn.BCEWithLogitsLoss()
+            self.logit_loss_aux = nn.BCEWithLogitsLoss()
+        else:
+            self.logit_loss = nn.CrossEntropyLoss()
+            self.logit_loss_aux = nn.CrossEntropyLoss()
         self.lang_logits_loss = nn.CrossEntropyLoss()
         self.lang_logits_loss_aux = nn.CrossEntropyLoss()
         self.class_logits_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
@@ -230,7 +239,10 @@ class ReferIt3DNet_transformer(nn.Module):
         """
         if self.anchors_mode != 'none':
             #trg_pass = torch.cat((batch['anchors_pos'][:, 0].unsqueeze(-1), batch['target_pos'].unsqueeze(-1)), -1)  # [N, trg_seq_length]
-            trg_pass = torch.cat((batch['anchors_pos'], batch['target_pos'].unsqueeze(-1)), -1)  # [N, trg_seq_length]
+            if self.multicls_multilabel:
+                trg_pass = torch.cat((batch['anchors_pos'], batch['target_pos']), 1)  # [N, trg_seq_length, num_cls]
+            else:
+                trg_pass = torch.cat((batch['anchors_pos'], batch['target_pos'].unsqueeze(-1)), -1)  # [N, trg_seq_length]
             if self.lang_filter_objs_activated and (self.matched_indices is not None):
                 #print("trg_pass[:, 0] = ", trg_pass[:, 0])
                 #print("self.matched_indices = ", self.matched_indices.shape)
@@ -251,7 +263,10 @@ class ReferIt3DNet_transformer(nn.Module):
             if trg_pass is None:
                 referential_loss = 0
             else:
-                trg_pass_reshaped = trg_pass.reshape(-1)  # [N*trg_seq_length]
+                if self.multicls_multilabel:
+                    trg_pass_reshaped = trg_pass.reshape(-1, trg_pass.shape[2])  # [N*trg_seq_length, num_cls]
+                else:
+                    trg_pass_reshaped = trg_pass.reshape(-1)  # [N*trg_seq_length]
                 LOGITS_reshaped = LOGITS.reshape(-1, LOGITS.shape[2])  # [N*trg_seq_length, num_cls]
                 referential_loss = self.logit_loss(LOGITS_reshaped, trg_pass_reshaped)
                 if AUX_LOGITS != None:
@@ -342,6 +357,11 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             AUX_LANG_LOGITS = None
             LANG_LOGITS = self.language_clf(lang_infos[:, 0])  # [128, 607]  # [B, num_cls*trg_seq_length]
+
+        if self.feedGTPath:
+            cot_path_lang_tokens = batch['cot_path_lang_tokens']
+            cot_path_lang_infos = self.cot_path_language_encoder(**cot_path_lang_tokens)[0]  # [128, 20, 768]
+            lang_infos = torch.cat([cot_path_lang_infos, lang_infos], dim=1)
 
         ## multi-modal_fusion
         cat_infos = obj_infos.reshape(B * self.view_number, -1, self.inner_dim)  # [512, 52, 768]

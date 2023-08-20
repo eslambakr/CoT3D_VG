@@ -29,7 +29,7 @@ def make_batch_keys(args, extras=None):
     return batch_keys
 
 
-def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx, args, tokenizer=None,epoch=None):
+def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx, args, tokenizer=None, epoch=None):
     """
     :param model:
     :param data_loader:
@@ -83,6 +83,12 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
             lang_tokens.data[name] = lang_tokens.data[name].cuda()
         batch['lang_tokens'] = lang_tokens
 
+        if args.feedGTPath:
+            cot_path_lang_tokens = tokenizer(batch['cot_path_tokens'], return_tensors='pt', padding=True)
+            for name in cot_path_lang_tokens.data:
+                cot_path_lang_tokens.data[name] = cot_path_lang_tokens.data[name].cuda()
+            batch['cot_path_lang_tokens'] = cot_path_lang_tokens
+
         # Forward pass
         LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS = model(batch, epoch)
         LOSS = LOSS_target[0]
@@ -105,16 +111,21 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         total_loss_mtr.update(LOSS.item(), batch_size)
 
         predictions = torch.argmax(res['logits'], dim=1)
+        if args.multicls_multilabel:
+            target = torch.argmax(target, dim=1)
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
         if args.anchors == 'cot' and (res['AUX_LOGITS'] is not None):
             predictions = torch.argmax(res['AUX_LOGITS'][:, -1], dim=1)
-            guessed_correctly = torch.mean((predictions == batch['target_pos']).double()).item()
+            guessed_correctly = torch.mean((predictions == target).double()).item()
             ref_acc_mtr_aux_tgt.update(guessed_correctly, batch_size)
 
             predictions = torch.argmax(res['AUX_LOGITS'][:, 0], dim=1)
-            guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+            if args.multicls_multilabel:
+                guessed_correctly = torch.mean((predictions == torch.argmax(batch['anchors_pos'][:, 0], dim=1)).double()).item()
+            else:
+                guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
             ref_acc_mtr_aux_anchor1.update(guessed_correctly, batch_size)
 
         if args.obj_cls_alpha > 0:
@@ -123,7 +134,7 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
 
             # Eslam: Measure the classification Accuracy for the target only
             cls_target_b_acc, _ = cls_target_pred_stats(res['class_logits'], batch['class_labels'],
-                                                        batch['target_pos'],  ignore_label=pad_idx)
+                                                        target, ignore_label=pad_idx)
             cls_target_acc_mtr.update(cls_target_b_acc, batch_size)
 
         if args.lang_cls_alpha > 0:
@@ -195,6 +206,12 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
             lang_tokens.data[name] = lang_tokens.data[name].cuda()
         batch['lang_tokens'] = lang_tokens
 
+        if args.feedGTPath:
+            cot_path_lang_tokens = tokenizer(batch['cot_path_tokens'], return_tensors='pt', padding=True)
+            for name in cot_path_lang_tokens.data:
+                cot_path_lang_tokens.data[name] = cot_path_lang_tokens.data[name].cuda()
+            batch['cot_path_lang_tokens'] = cot_path_lang_tokens
+
         # Forward pass
         LOSS_target, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS = model(batch, epoch)
         LOSS = LOSS_target[0]
@@ -212,16 +229,21 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         total_loss_mtr.update(LOSS.item(), batch_size)
 
         predictions = torch.argmax(res['logits'], dim=1)
+        if args.multicls_multilabel:
+            target = torch.argmax(target, dim=1)
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
         if args.anchors == 'cot' and (res['AUX_LOGITS'] is not None):
             predictions = torch.argmax(res['AUX_LOGITS'][:, -1], dim=1)
-            guessed_correctly = torch.mean((predictions == batch['target_pos']).double()).item()
+            guessed_correctly = torch.mean((predictions == target).double()).item()
             ref_acc_mtr_aux_tgt.update(guessed_correctly, batch_size)
 
             predictions = torch.argmax(res['AUX_LOGITS'][:, 0], dim=1)
-            guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+            if args.multicls_multilabel:
+                guessed_correctly = torch.mean((predictions == torch.argmax(batch['anchors_pos'][:, 0], dim=1)).double()).item()
+            else:
+                guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
             ref_acc_mtr_aux_anchor1.update(guessed_correctly, batch_size)
 
         if args.obj_cls_alpha > 0:
@@ -230,7 +252,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
 
             # Eslam: Measure the classification Accuracy for the target only
             cls_target_b_acc, _ = cls_target_pred_stats(res['class_logits'], batch['class_labels'],
-                                                        batch['target_pos'],  ignore_label=pad_idx)
+                                                        target, ignore_label=pad_idx)
             cls_target_acc_mtr.update(cls_target_b_acc, batch_size)
 
         if args.lang_cls_alpha > 0:

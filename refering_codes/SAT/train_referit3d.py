@@ -225,6 +225,8 @@ if __name__ == '__main__':
                 if args.warmup: 
                     scheduler_warmup.step(epoch=epoch, metrics=eval_acc)    ## using the previous epoch's metrics
                 print('lr:', epoch, optimizer.param_groups[0]['lr'], optimizer.param_groups[1]['lr'])
+                logger.info('LR of param_groups[0] {}'.format(optimizer.param_groups[0]['lr']))
+                logger.info('LR of param_groups[1] {}'.format(optimizer.param_groups[1]['lr']))
 
                 # Train:
                 tic = time.time()

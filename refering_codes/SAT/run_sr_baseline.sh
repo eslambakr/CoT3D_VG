@@ -4,7 +4,7 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/SAT
 /home/abdelrem/anaconda3/envs/refer3d_cuda/bin/python -u train_referit3d.py \
     -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_sr3d_org/keep_all_points_with_global_scan_alignment/keep_all_points_with_global_scan_alignment.pkl \
     -referit3D-file /home/abdelrem/3d_codes/scannet_dataset/scannet/sr3d.csv \
-    --log-dir logs/cot_sr_40%_2d_fixed_reportanchoracc_5lr_0.1lrmmt_warmupFalse_mvtlrschedule \
+    --log-dir logs/cot_sr_70%_2d_fixed_reportanchoracc_5lr_0.1lrmmt_warmupFalse_mvtlrschedule \
     --patience 100 \
     --max-train-epochs 100 \
     --init-lr 5e-4 \
@@ -12,7 +12,7 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/SAT
     --transformer \
     --model mmt_referIt3DNet \
     --n-workers 6 \
-    --gpu 2 \
+    --gpu 0 \
     --unit-sphere-norm True \
     --feat2d clsvecROI \
     --context_2d unaligned \
@@ -26,4 +26,4 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/SAT
     --visaug_shuffle_mode 'none' \
     --visaug_extracted_obj_path '/home/abdelrem/3d_codes/CoT3D_VG/data/sr3d/' \
     --visaug_pc_augment False \
-    --train_data_percent 0.4 \
+    --train_data_percent 0.7 \

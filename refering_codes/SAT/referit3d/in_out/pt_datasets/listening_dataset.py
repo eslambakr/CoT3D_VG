@@ -427,14 +427,14 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
             extend = 1
             org_training_len = len(d_set)
             if args.target_aug_percentage:
-                unique_rel_df = pd.read_csv("/home/mohama0e/3D_Codes/SAT/referit3d/data/nr3d_cot_unique_rel_anchor_data.csv")
+                unique_rel_df = pd.read_csv("referit3d/data/nr3d_cot_unique_rel_anchor_data.csv")
                 d_set = pd.merge(d_set, unique_rel_df, how='left', on=['utterance'], suffixes=('', '_y'))
             if args.train_data_percent < 1:
                 # Filter the samples which don't contain the max_num_anchors
                 if 'nr' in args.referit3D_file:
                     d_set = d_set[d_set['num_anchors'] <= max_anchors]
                     if args.target_aug_percentage and (args.train_data_percent==0.1) and (max_anchors==1):
-                        unique_rel_df = pd.read_csv("/home/mohama0e/3D_Codes/SAT/referit3d/data/nr3d_cot_unique_rel_anchor_data.csv")
+                        unique_rel_df = pd.read_csv("referit3d/data/nr3d_cot_unique_rel_anchor_data.csv")
                         d_set = pd.merge(d_set, unique_rel_df, how='inner', on=['utterance'], suffixes=('', '_y'))
                 extend = org_training_len/len(d_set)
             d_set = d_set.sample(frac=args.train_data_percent*extend)

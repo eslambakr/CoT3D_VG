@@ -4,10 +4,10 @@ import csv
 from referit3d.in_out.scannet_scan import ScannetScan, ScannetDataset
 import pandas as pd
 import string
-from extract_objs_from_description import ExtractObjsFromDescription
+from automatic_loc_module.extract_anchors.extract_objs_from_description import ExtractObjsFromDescription
 import xlsxwriter
 import random
-
+import argparse
 
 def read_referring_data_scv(file_path):
     df = pd.read_csv(file_path)
@@ -24,7 +24,11 @@ def save_in_csv(lst, saving_name):
 
 
 if __name__ == '__main__':
-    df = read_referring_data_scv(file_path="./data/nr3d.csv")
+    parser = argparse.ArgumentParser(description='Extract anchors for referring data')
+    parser.add_argument('--file_path', type=str, help='The path of the referring data csv file', default="./data/referring_data.csv")
+    parser.add_argument('--output_path', type=str, help='The name of the saving file', default="./data/pred_objs.csv")
+    args = parser.parse_args()
+    df = read_referring_data_scv(file_path= args.file_path)
     scan_ids = df.scan_id
     gt_objs_name_all_scenes = []
     gt_utternaces_all_scenes = []
@@ -59,5 +63,4 @@ if __name__ == '__main__':
     print("Number of _00 items are: ", unique_counter)
 
     # Save the predicted objects in CSV file for manual verification:
-    pred_objs_name_all_scenes = random.sample(pred_objs_name_all_scenes, 120)
-    save_in_csv(lst=pred_objs_name_all_scenes, saving_name="./data/pred_objs_for_manual_verification.csv")
+    save_in_csv(lst=pred_objs_name_all_scenes, saving_name=args.output_path)

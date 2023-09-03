@@ -2,7 +2,7 @@ from tqdm import tqdm
 from referit3d.in_out.scannet_scan import ScannetScan, ScannetDataset
 import pandas as pd
 import string
-from extract_objs_from_description import ExtractObjsFromDescription
+from automatic_loc_module.extract_anchors.extract_objs_from_description import ExtractObjsFromDescription
 
 
 def read_referring_data_scv(file_path):

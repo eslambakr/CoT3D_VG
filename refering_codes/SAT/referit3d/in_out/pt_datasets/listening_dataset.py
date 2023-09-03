@@ -19,6 +19,33 @@ from ...data_generation.nr3d import decode_stimulus_string
 from ..three_d_object import ThreeDObject
 from .pc_transforms import ChromaticTranslation, RandomSymmetry, RandomNoise, Random3AxisRotation
 import torchvision.transforms as T
+from transformers import BertTokenizer, BertModel
+
+
+def unique_items_in_list(list1):
+    list_set = set(list1)
+    unique_list = (list(list_set))
+    return unique_list
+
+def get_consecutive_identical_elements(anchor_name_id_list):
+    """
+    anchor_name_id_list: list of set, where each set consists of: ('anchor_name', anchor_id)
+    """
+    new_anchor_name_id_list = []
+    idx = 0
+    while idx < len(anchor_name_id_list):  # loop on the whole path
+        list_ids_per_name = [anchor_name_id_list[idx][1]]
+        j = idx+1
+        while j < len(anchor_name_id_list):  # loop on the rest of the path
+            if anchor_name_id_list[idx][0] == anchor_name_id_list[j][0]:
+                list_ids_per_name.append(anchor_name_id_list[j][1])
+                j += 1
+            else:
+                break
+        new_anchor_name_id_list.append((anchor_name_id_list[idx][0], unique_items_in_list(list_ids_per_name)))
+        idx = j
+    return new_anchor_name_id_list
+
 
 class ListeningDataset(Dataset):
     def __init__(self, references, scans, vocab, max_seq_len, points_per_object, max_distractors,
@@ -27,7 +54,8 @@ class ListeningDataset(Dataset):
                  num_class_dim=525, evalmode=False, 
                  anchors_mode="cot", max_anchors=2, predict_lang_anchors=False, 
                  shuffle_objects=None, pc_transforms=None, textaug_paraphrase_percentage=None, shuffle_objects_percentage=None,
-                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False
+                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False,
+                 scanrefer=False, feedGTPath=False, multicls_multilabel=False, max_test_objects=None, include_anchor_distractors=False
                  ):
 
         self.references = references
@@ -54,6 +82,14 @@ class ListeningDataset(Dataset):
         self.target_aug_percentage = target_aug_percentage
         self.distractor_aux_loss_flag = distractor_aux_loss_flag
         self.is_train = is_train
+        #new Features
+        self.scanrefer = scanrefer
+        self.feedGTPath = feedGTPath
+        self.multicls_multilabel = multicls_multilabel
+        self.max_test_objects = max_test_objects
+        self.include_anchor_distractors = include_anchor_distractors
+        
+        
         #TODO: Get this file and change the path 
         
         with open('referit3d/data/unique_rel_map_dict_opposite.json') as f:
@@ -92,7 +128,11 @@ class ListeningDataset(Dataset):
             # If anchor_ids is not in the expected format, assume it's a single number
             anchor_ids = [int(anchor_ids)]
         return anchor_ids
-    
+
+    def get_scanrefer_anchor_ids(self, anchor_ids):
+        anchor_ids = [int(anchor_id) for anchor_id in anchor_ids]  # make sure they are ints
+        #anchor_ids = anchor_ids[:-1]  # drop the last item as we add the tgt at the end by mistake.
+        return anchor_ids
     
     def get_reference_data(self, index):
         ref = self.references.loc[index]
@@ -105,7 +145,11 @@ class ListeningDataset(Dataset):
         path = None
         self.anchors_len = 0
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
-            self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
+            
+            if self.scanrefer:
+                self.anchors_ids = self.get_scanrefer_anchor_ids(ref['anchor_ids'])
+            else:
+                self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
             if is_nr3d:
                 path = ref['path']
                 if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
@@ -138,8 +182,54 @@ class ListeningDataset(Dataset):
             self.anchors_len = len(anchors)+1 if len(anchors) < self.max_anchors else len(anchors)  # +1 as we will add only one empty anchor later
         
         tokens = np.array(self.vocab.encode(ref['tokens'], self.max_seq_len), dtype=np.long)
-        
+        if self.multicls_multilabel:
+                anchors_path = path[:-1]  # exclude the target for now
+                assert len(anchors_path) == len(self.anchors_ids)
+                anchor_name_id_list = []
+                for i, anchor_id in enumerate(self.anchors_ids):
+                    anchor_name_id_list.append((anchors_path[i], anchor_id))
+                # e.g.: [('nightstand', 20), ('bed', 14), ('bed', 13)] --> [('nightstand', [20]), ('bed', [14, 13])]
+                #print("Before --> ", anchor_name_id_list)
+                anchor_name_id_list = get_consecutive_identical_elements(anchor_name_id_list)
+                #print("After --> ", anchor_name_id_list)
+                # Create new anchors:
+                anchor_name_id_pos_list = []
+                anchors = []
+                for i in range(len(anchor_name_id_list)):
+                    anchors_pos_in_anchors = []
+                    for anchor_id in anchor_name_id_list[i][1]:
+                        anchors.append(scan.three_d_objects[anchor_id])
+                        anchors_pos_in_anchors.append(len(anchors)-1)
+                    anchor_name_id_pos_list.append((anchor_name_id_list[i][0], anchor_name_id_list[i][1], anchors_pos_in_anchors))
 
+                # Update path and anchors:
+                new_len_anchors = [len(dumy_item[1]) for dumy_item in anchor_name_id_pos_list]
+                new_len_anchors = sum(new_len_anchors)
+                anchors_path = [dumy_item[0] for dumy_item in anchor_name_id_pos_list]
+                path = anchors_path + [path[-1]]
+                # Handle the case where we set max_anchors number to low number (< true path) --> Trim the path:
+                if len(anchor_name_id_pos_list) > self.max_anchors:
+                    anchor_name_id_pos_list = anchor_name_id_pos_list[:self.max_anchors]
+                    # trim the path
+                    trimmed_path = path[:self.max_anchors]  # Get max_num of anchor
+                    trimmed_path.append(path[-1])  # Adding the target 
+                    path = trimmed_path
+
+                    # trim the anchors
+                    new_len_anchors = [len(dumy_item[1]) for dumy_item in anchor_name_id_pos_list]
+                    new_len_anchors = sum(new_len_anchors)
+                    anchors = anchors[:new_len_anchors]
+
+                # Update anchor length:
+                self.anchors_len = new_len_anchors+1 if len(anchor_name_id_pos_list) < self.max_anchors else new_len_anchors  # +1 as we will add only one empty anchor later
+                self.anchor_name_id_pos_list = anchor_name_id_pos_list
+        
+        
+        
+        
+        if self.feedGTPath:
+            self.cot_path_tokens = " ".join(path)
+            
         return scan, target, tokens, ref['tokens'], is_nr3d, ref['scan_id'], anchors, path
 
     def prepare_distractors(self, scan, target, anchors):
@@ -210,6 +300,12 @@ class ListeningDataset(Dataset):
             # Add target object in 'context' list
             target_pos = poses[0]
             context.insert(target_pos, target)
+            
+            if self.multicls_multilabel:
+                target_pos = np.zeros((1, self.max_test_objects))
+                target_pos[0, poses[0]] = 1
+
+            
             # Add anchors in 'context' list
             anchors_pos = poses[1:]
             #print("---- anchors_pos = ", anchors_pos)
@@ -400,7 +496,23 @@ class ListeningDataset(Dataset):
             exit(0)
         res['feat_2d'] = feat_2d  
         res['coords_2d'] = coords_2d
+        if self.feedGTPath:
+            res['cot_path_tokens'] = self.cot_path_tokens
+            feed_GT_PATH_indices = self.bert_tokenizer.encode(
+            ' '.join(res['cot_path_tokens']), add_special_tokens=True)
+            feed_GT_PATH_indices = feed_GT_PATH_indices[:self.max_seq_len]
+            token_inds[:len(feed_GT_PATH_indices)] = torch.tensor(feed_GT_PATH_indices)
+            token_num = torch.tensor(len(feed_GT_PATH_indices), dtype=torch.long)    
+            res['cot_path_tokens_token_inds'] = token_inds.numpy().astype(np.int64)
+            res['cot_path_tokens_token_num'] = token_num.numpy().astype(np.int64)
 
+        # if self.feedGTPath:
+            
+        #     cot_path_lang_tokens = tokenizer(res['cot_path_tokens'], return_tensors='pt', padding=True)
+        #     for name in cot_path_lang_tokens.data:
+        #         cot_path_lang_tokens.data[name] = cot_path_lang_tokens.data[name].cuda()
+        #     res['cot_path_lang_tokens'] = cot_path_lang_tokens
+        
         return res
 
 def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, seed=None):
@@ -449,7 +561,7 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
         ## this is a silly small bug -> not the minus-1.
 
         # if split == test remove the utterances of unique targets
-        if split == 'test':
+        if split == 'test' and (not args.scanrefer):
             def multiple_targets_utterance(x):
                 _, _, _, _, distractors_ids = decode_stimulus_string(x.stimulus_id)
                 return len(distractors_ids) > 0
@@ -491,7 +603,13 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    textaug_paraphrase_percentage=args.textaug_paraphrase_percentage,
                                    target_aug_percentage=args.target_aug_percentage,
                                    is_train=split=='train',
-                                   distractor_aux_loss_flag=args.distractor_aux_loss_flag
+                                   distractor_aux_loss_flag=args.distractor_aux_loss_flag, 
+                                   #New Features in SAT 
+                                   scanrefer=args.scanrefer,
+                                   feedGTPath=args.feedGTPath,
+                                   multicls_multilabel=args.multicls_multilabel,
+                                   max_test_objects=args.max_test_objects,
+                                   include_anchor_distractors=args.include_anchor_distractors
                                    )
 
         seed = seed

@@ -56,7 +56,10 @@ class MMT_ReferIt3DNet(nn.Module):
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.cls_names = np.array(list(self.idx_to_class.values()))
         self.is_nr = True if 'nr' in args.referit3D_file else False
-
+        self.feedGTPath = args.feedGTPath
+        self.multicls_multilabel = args.multicls_multilabel
+    
+    
         if self.anchors_mode == "cot" or self.anchors_mode == "parallel":
             if self.is_nr:
                 self.max_num_anchors = args.max_num_anchors
@@ -110,10 +113,21 @@ class MMT_ReferIt3DNet(nn.Module):
         self.text_bert = TextBert.from_pretrained(
             'bert-base-uncased', config=self.text_bert_config,\
             mmt_mask=self.mmt_mask)
+        
+        #This is additional Feature 
+        if self.feedGTPath:            
+            self.cot_path_language_text_bert = TextBert.from_pretrained(
+                'bert-base-uncased', config=self.text_bert_config,\
+                mmt_mask=self.mmt_mask)
+
+            
+            
         if TEXT_BERT_HIDDEN_SIZE!=MMT_HIDDEN_SIZE:
             self.text_bert_out_linear = nn.Linear(TEXT_BERT_HIDDEN_SIZE, MMT_HIDDEN_SIZE)
         else:
             self.text_bert_out_linear = nn.Identity()
+
+        
 
         # Classifier heads
         # Optional, make a bbox encoder
@@ -224,6 +238,8 @@ class MMT_ReferIt3DNet(nn.Module):
             txt_type_mask=txt_type_mask
         )
         txt_emb = self.text_bert_out_linear(text_bert_out) #[16,24,768] -> [B,Language_size, E ]
+        
+    
         # Classify the target instance label based on the text
         # import pdb; pdb.set_trace()
         
@@ -248,6 +264,18 @@ class MMT_ReferIt3DNet(nn.Module):
             else:
                 result['aux_lang_logits'] = None
                 result['lang_logits'] = self.language_clf(text_bert_out[:,0,:])
+
+        
+        if self.feedGTPath:
+            cot_path_language_txt_inds = batch['cot_path_tokens_token_inds']
+            cot_path_language_txt_type_mask = torch.ones(cot_path_language_txt_inds.shape, device=torch.device('cuda')) * 1.
+            cot_path_language_txt_mask = _get_mask(batch['cot_path_tokens_token_num'].to(cot_path_language_txt_inds.device), cot_path_language_txt_inds.size(1))  ## all proposals are non-empty
+            txt_type_mask = cot_path_language_txt_type_mask.long()
+            cot_path_language_text_bert_out = self.cot_path_language_text_bert(txt_inds=cot_path_language_txt_inds,
+                                                                                txt_mask=cot_path_language_txt_mask,
+                                                                                txt_type_mask=cot_path_language_txt_type_mask)
+            cot_path_language_txt_emb = self.text_bert_out_linear(cot_path_language_text_bert_out)
+            txt_emb = torch.cat([txt_emb, cot_path_language_txt_emb], dim=1)
 
         mmt_results = self.mmt(
             txt_emb=txt_emb,

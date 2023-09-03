@@ -298,6 +298,8 @@ class ListeningDataset(Dataset):
             # Add target object in 'context' list
             target_pos = poses[0]
             context.insert(target_pos, target)
+            
+            
             if self.multicls_multilabel:
                 target_pos = np.zeros((1, self.max_test_objects))
                 target_pos[0, poses[0]] = 1

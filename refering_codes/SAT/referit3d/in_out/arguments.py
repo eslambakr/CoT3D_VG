@@ -91,7 +91,14 @@ def parse_arguments(notebook_options=None):
                                                                  'epoch, stop training. fixed step if patience==max epoch')
     parser.add_argument("--warmup", type=str2bool, default=True, help="if lr linear warmup.")
 
-    #
+    # New features in SAT
+    parser.add_argument('--scanrefer', type=str2bool, default=False, help="Train on scanrefer dataset. So the loading part of the data will be changed.")
+    parser.add_argument('--feedGTPath', type=str2bool, default=False, help="Feed the GT logical path as an input to the model.")
+    parser.add_argument('--multicls_multilabel', type=str2bool, default=False, help="Remove duplicates from the path and deal with it as multi-labels.")
+    parser.add_argument('--remove_repeated_anchors', type=str2bool, default=False, help="Remove duplicates from the path and sample anchor_id to assign it.")
+    parser.add_argument('--include_anchor_distractors', type=str2bool, default=False, help="This flag determines whether we should include the anchors' distractors or not.")
+    
+    
     # Model arguments
     #TODO: Update the model arguments after updating it!
     #

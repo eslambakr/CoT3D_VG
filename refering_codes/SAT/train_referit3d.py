@@ -14,7 +14,7 @@ from termcolor import colored
 # torch.multiprocessing.set_sharing_strategy('file_system')
 
 from referit3d.in_out.arguments import parse_arguments
-from referit3d.in_out.neural_net_oriented import load_scan_related_data, load_referential_data
+from referit3d.in_out.neural_net_oriented import load_scan_related_data, load_referential_data, load_scanrefer_referential_data
 from referit3d.in_out.neural_net_oriented import compute_auxiliary_data, trim_scans_per_referit3d_data
 from referit3d.in_out.pt_datasets.listening_dataset import make_data_loaders
 from referit3d.utils import set_gpu_to_zero_position, create_logger, seed_training_code
@@ -58,7 +58,6 @@ def log_train_test_information():
     logger.info('Best so far {:.3f} (@epoch {})'.format(best_test_acc, best_test_epoch))
         
 if __name__ == '__main__':
-
     # Parse arguments
     args = parse_arguments()
     if args.context_2d!='unaligned':
@@ -75,11 +74,17 @@ if __name__ == '__main__':
     all_scans_in_dict, scans_split, class_to_idx = load_scan_related_data(args.scannet_file,
                                                                            add_no_obj=args.anchors != 'none' or args.predict_lang_anchors)
     is_nr = True if 'nr' in args.referit3D_file else False
-    if is_nr:
+    if is_nr or args.scanrefer:
         class_to_idx = create_sr3d_classes_2_idx(json_pth="referit3d/data/mappings/scannet_instance_class_to_semantic_class.json")
     # Read the linguistic data of ReferIt3D
-    referit_data = load_referential_data(args, args.referit3D_file, scans_split)
+    if args.scanrefer:
+        # Read the linguistic data of ScanRefer
+        referit_data, scans_split = load_scanrefer_referential_data(args, args.referit3D_file, scans_split)
+    else:
+        referit_data = load_referential_data(args, args.referit3D_file, scans_split)
 
+    
+    
     # Prepare data & compute auxiliary meta-information.
     all_scans_in_dict = trim_scans_per_referit3d_data(referit_data, all_scans_in_dict)
     mean_rgb, vocab = compute_auxiliary_data(referit_data, all_scans_in_dict, args)
@@ -110,6 +115,12 @@ if __name__ == '__main__':
         criteria['logits'] = nn.CrossEntropyLoss().to(device)
         criteria['logit_aux'] = nn.CrossEntropyLoss().to(device)
     criteria['logits_nondec'] = nn.CrossEntropyLoss(reduction='none').to(device)
+    
+    if args.multicls_multilabel:
+        criteria['logits'] = nn.BCEWithLogitsLoss().to(device)
+        criteria['logit_aux'] = nn.BCEWithLogitsLoss().to(device)
+        
+    
     # Prepare the Listener
     n_classes = len(class_to_idx) - 1  # -1 to ignore the <pad> class -1 for no object
     pad_idx = class_to_idx['pad']

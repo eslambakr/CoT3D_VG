@@ -53,6 +53,102 @@ def mean_color(scan_ids, all_scans):
     return mean_rgb
 
 
+def load_scanrefer_referential_data(args, referit_csv, scans_split):
+    """
+    :param args:
+    :param referit_csv:
+    :param scans_split:
+    :return:
+    """
+    # Load the two files (train and val):
+    scanrefer_data_train = pd.read_csv(referit_csv)
+    print("The length of the loaded training file is : ", len(scanrefer_data_train))
+    scanrefer_data_val = pd.read_csv(referit_csv.replace('train', 'val'))
+    print("The length of the loaded val file is : ", len(scanrefer_data_val))
+
+    # Create the new split:
+    scans_split['train'] =  set(scanrefer_data_train['scene_id'])
+    scans_split['test'] =  set(scanrefer_data_val['scene_id'])
+    print("The length of the training scenes is : ", len(scans_split['train']))
+    print("The length of the val scenes is : ", len(scans_split['test']))
+
+    # Merge the two files:
+    scanrefer_data = pd.concat([scanrefer_data_train, scanrefer_data_val], axis=0).reset_index()
+    print("The length of the loaded train & val files together is : ", len(scanrefer_data))
+
+    # Rename the columns to match the Referit names:
+    scanrefer_data.rename(columns = {'scene_id':'scan_id'}, inplace = True)
+    scanrefer_data.rename(columns = {'object_id':'target_id'}, inplace = True)
+    scanrefer_data.rename(columns = {'description':'utterance'}, inplace = True)
+    scanrefer_data.rename(columns = {'token':'tokens'}, inplace = True)
+    scanrefer_data.rename(columns = {'object_name':'instance_type'}, inplace = True)
+
+    # Clean path, tokens and anchor_ids --> convert them to list:
+    scanrefer_data.path = scanrefer_data['path'].apply(literal_eval)
+    scanrefer_data.anchor_ids = scanrefer_data['anchor_ids'].apply(literal_eval)
+    scanrefer_data.tokens = scanrefer_data['tokens'].apply(literal_eval)
+
+    # Drop the last item as we add the tgt at the end by mistake.
+    scanrefer_data.anchor_ids = scanrefer_data['anchor_ids'].apply(lambda x: x[:-1])
+
+    # Remove duplicated anchors from the path and sample anchor_id to assign it:
+    if args.remove_repeated_anchors:
+        filtered_path = []
+        filtered_anchor_ids = []
+        anchors_id_temp = []
+        anchors_id_temp_all_data = scanrefer_data['anchor_ids'].values
+        for i, path in enumerate(scanrefer_data['path']):  # Loop on each example
+            anchors_path = path[:-1]  # exclude the target for now
+            # print("anchors_path = ", anchors_path)  ['cabinet', 'cabinet', 'door', 'desk', 'table'] ['39', '54', '7', '39', '35']
+            anchors_id_temp = anchors_id_temp_all_data[i]
+            anchors_id_temp = [int(A) for A in anchors_id_temp]
+            assert len(anchors_path) == len(anchors_id_temp)
+            anchor_name_id_list = []
+            for j, anchor_id in enumerate(anchors_id_temp):
+                anchor_name_id_list.append((anchors_path[j], anchor_id))
+            # e.g.: [('nightstand', 20), ('bed', 14), ('bed', 13)] --> [('nightstand', [20]), ('bed', [14, 13])]
+            #print("Before --> ", anchor_name_id_list)
+            anchor_name_id_list = get_consecutive_identical_elements(anchor_name_id_list)
+            #print("After --> ", anchor_name_id_list) 
+            # Sample the first anchor_id if there are more than one, A.K.A remove duplicates:
+            for j in range(len(anchor_name_id_list)):
+                anchor_name_id_list[j] = (anchor_name_id_list[j][0], anchor_name_id_list[j][1][0])  # sample the first one
+            
+            # Save the filtered path and anchors_ids:
+            anchors_path = [dumy_item[0] for dumy_item in anchor_name_id_list]
+            filtered_path.append(anchors_path + [path[-1]])
+            filtered_anchor_ids.append([dumy_item[1] for dumy_item in anchor_name_id_list])
+
+        scanrefer_data['path'] = pd.Series(filtered_path)
+        scanrefer_data['anchor_ids'] = pd.Series(filtered_anchor_ids)
+
+    # Add the 'num_anchors' data to the pandas data frame
+    num_anchors = scanrefer_data['anchor_ids'].apply(lambda x: len(x))
+    scanrefer_data['num_anchors'] = num_anchors
+    print("------------- Max number of anchors: ", max(num_anchors))
+
+    keys = ['tokens', 'instance_type', 'scan_id', 'target_id', 'utterance', 'path', 'anchor_ids', 'num_anchors']
+    scanrefer_data = scanrefer_data[keys]
+
+    # Add the is_train data to the pandas data frame (needed in creating data loaders for the train and test)
+    is_train = scanrefer_data.scan_id.apply(lambda x: x in scans_split['train'])
+    scanrefer_data['is_train'] = is_train
+
+    # Add the 'dataset'
+    data_name = ['nr3d']*len(is_train)
+    scanrefer_data['dataset'] = pd.Series(data_name)
+
+    # Trim data based on token length
+    train_token_lens = scanrefer_data.tokens[is_train].apply(lambda x: len(x))
+    print('{}-th percentile of token length for remaining (training) data'
+          ' is: {:.1f}'.format(95, np.percentile(train_token_lens, 95)))
+    n_original = len(scanrefer_data)
+    scanrefer_data = scanrefer_data[scanrefer_data.tokens.apply(lambda x: len(x) <= args.max_seq_len)]
+    scanrefer_data.reset_index(drop=True, inplace=True)
+    print('Dropping utterances with more than {} tokens, {}->{}'.format(args.max_seq_len, n_original, len(scanrefer_data)))
+
+    return scanrefer_data, scans_split
+
 def load_referential_data(args, referit_csv, scans_split):
     """
     :param args:

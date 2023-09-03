@@ -93,15 +93,6 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         for k in batch_keys:
             if k in batch:
                 batch[k] = batch[k].to(device)
-        # for k in batch_keys:
-        #     if isinstance(batch[k], list) and k in extras:
-        #         for i, _ in enumerate(batch[k]):
-        #             batch[k][i] = batch[k][i].to(device)
-        #     else:
-        #         if isinstance(batch[k], list):
-        #             continue
-        #         batch[k] = batch[k].to(device)
-                
                 
         if args.object_encoder == 'pnet':
             batch['objects'] = batch['objects'].permute(0, 1, 3, 2)
@@ -126,16 +117,24 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
         referential_loss_mtr.update(all_losses['referential_loss'], batch_size)
 
         predictions = torch.argmax(res['logits'], dim=1)
+        if args.multicls_multilabel:
+            target = torch.argmax(target, dim=1)
+        
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
-        if args.anchors == 'cot':
+        if args.anchors == 'cot' and (res['AUX_LOGITS'] is not None):
             predictions = torch.argmax(res['aux_logits'][:, -1], dim=1)
             guessed_correctly = torch.mean((predictions == batch['target_pos']).double()).item()
             ref_acc_mtr_aux_tgt.update(guessed_correctly, batch_size)
 
             predictions = torch.argmax(res['aux_logits'][:, 0], dim=1)
-            guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+            
+            if args.multicls_multilabel:
+                guessed_correctly = torch.mean((predictions == torch.argmax(batch['anchors_pos'][:, 0], dim=1)).double()).item()
+            else:
+                guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+                        
             ref_acc_mtr_aux_anchor1.update(guessed_correctly, batch_size)
 
         if args.obj_cls_alpha > 0:
@@ -224,14 +223,23 @@ def compute_losses(batch, res, criterion_dict, args):
     else:
         lang_out = 1
         n_obj_classes = args.n_obj_classes
+        
+    
     
     # Get the object language classification loss and the object classification loss
     criterion = criterion_dict['logits']
     logits = res['logits']
     if args.anchors != 'none':
-        trg_pass = torch.cat((batch['anchors_pos'], batch['target_pos'].unsqueeze(-1)), -1)  # [N, trg_seq_length]
+        if args.multicls_multilabel:
+                trg_pass = torch.cat((batch['anchors_pos'], batch['target_pos']), 1)  # [N, trg_seq_length, num_cls]
+        else:
+            trg_pass = torch.cat((batch['anchors_pos'], batch['target_pos'].unsqueeze(-1)), -1)  # [N, trg_seq_length]
         
-        trg_pass_reshaped = trg_pass.reshape(-1)  # [N*trg_seq_length]
+        
+        if args.multicls_multilabel:
+            trg_pass_reshaped = trg_pass.reshape(-1, trg_pass.shape[2])  # [N*trg_seq_length, num_cls]
+        else:
+            trg_pass_reshaped = trg_pass.reshape(-1)  # [N*trg_seq_length]
         LOGITS_reshaped = logits.reshape(-1, logits.shape[2])  # [N*trg_seq_length, num_cls]
         if args.s_vs_n_weight is not None:
             total_loss = criterion_dict['logits_nondec'](LOGITS_reshaped, trg_pass_reshaped)
@@ -381,6 +389,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         if args.object_encoder == 'pnet':
             batch['objects'] = batch['objects'].permute(0, 1, 3, 2)
         
+        
         # Forward pass
         res = model(batch)
 
@@ -397,6 +406,11 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
         referential_loss_mtr.update(all_losses['referential_loss'], batch_size)
 
         predictions = torch.argmax(res['logits'], dim=1)
+        
+        #change for SAT
+        if args.multicls_multilabel:
+            target = torch.argmax(target, dim=1)
+            
         guessed_correctly = torch.mean((predictions == target).double()).item()
         ref_acc_mtr.update(guessed_correctly, batch_size)
 
@@ -406,7 +420,12 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
             ref_acc_mtr_aux_tgt.update(guessed_correctly, batch_size)
 
             predictions = torch.argmax(res['aux_logits'][:, 0], dim=1)
-            guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+            # guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+            if args.multicls_multilabel:
+                guessed_correctly = torch.mean((predictions == torch.argmax(batch['anchors_pos'][:, 0], dim=1)).double()).item()
+            else:
+                guessed_correctly = torch.mean((predictions == batch['anchors_pos'][:, 0]).double()).item()
+            
             ref_acc_mtr_aux_anchor1.update(guessed_correctly, batch_size)
         
         if args.obj_cls_alpha > 0:

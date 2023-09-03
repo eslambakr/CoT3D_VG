@@ -5,7 +5,7 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_sr3d_org/keep_all_points_with_global_scan_alignment/keep_all_points_with_global_scan_alignment.pkl \
     -referit3D-file /home/abdelrem/3d_codes/scannet_dataset/scannet/sr3d.csv \
     --bert-pretrain-path /home/abdelrem/3d_codes/MVT-3DVG/weights/bert-base-uncased/ \
-    --log-dir logs/sr/MVT_sr3d_bs24_cot_data10_selfCons \
+    --log-dir logs/sr/GT_MVT_sr3d_baseline_drop15%_data10% \
     --n-workers 16 \
     --model 'referIt3DNet_transformer' \
     --unit-sphere-norm True \
@@ -17,13 +17,28 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     --view_number 4 \
     --rotate_number 4 \
     --label-lang-sup True \
-    --anchors "cot" \
+    --anchors "none" \
     --max-test-objects 52 \
-    --cot_type "self_cons" \
-    --predict_lang_anchors True \
+    --cot_type "cross" \
+    --predict_lang_anchors False \
+    --distractor_aux_loss_flag False \
     --lang_filter_objs False \
     --visaug_shuffle_mode 'none' \
     --visaug_extracted_obj_path '/home/abdelrem/3d_codes/CoT3D_VG/data/sr3d/' \
     --visaug_pc_augment False \
     --train_data_percent 0.1 \
-    --max_num_anchors 1
+    --max_num_anchors 1 \
+    --dropout-rate 0.15 \
+    --textaug_paraphrase_percentage 0 \
+    --target_aug_percentage 0 \
+    --gaussian_latent False \
+    --train_data_repeatation 1 \
+    --anchors_ids_type "GT" \
+    --obj_cls_post False \
+    --scanrefer False \
+    --max-seq-len 24 \
+    --feedGTPath False \
+    --multicls_multilabel False \
+    --remove_repeated_anchors False \
+    --include_anchor_distractors False\
+    --init-lr 0.0005

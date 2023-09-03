@@ -200,6 +200,14 @@ def load_referential_data(args, referit_csv, scans_split):
     is_train = referit_data.scan_id.apply(lambda x: x in scans_split['train'])
     referit_data['is_train'] = is_train
 
+    # Add the 'num_anchors' data to the pandas data frame
+    if is_nr:
+        num_anchors = referit_data['true_gt_id'].apply(lambda x: len(x))
+    else:
+        num_anchors = referit_data['anchor_ids'].apply(literal_eval)
+        num_anchors = num_anchors.apply(lambda x: len(x))
+    referit_data['num_anchors'] = num_anchors
+
     # Trim data based on token length
     train_token_lens = referit_data.tokens[is_train].apply(lambda x: len(x))
     print('{}-th percentile of token length for remaining (training) data'

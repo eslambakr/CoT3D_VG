@@ -144,6 +144,9 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--decoder-nhead-num', type=int, default=8)
     parser.add_argument('--inner-dim', type=int, default=768)
     parser.add_argument('--dropout-rate', type=float, default=0.15)
+    parser.add_argument('--anchors_ids_type', type=str, default=False,  help="Four options are available: [pseudoWneg_old, pseudoWneg, pseudoWOneg, ourPathGTids, GT]\
+                         1- pseudo w negatives old file. 2- pseudo w negatives. 3- pseudo w/o negatives. \
+                         4- our path combined with GT boxes ids. 5- GT path combined with GT boxes ids.")
 
     #
     # Misc arguments

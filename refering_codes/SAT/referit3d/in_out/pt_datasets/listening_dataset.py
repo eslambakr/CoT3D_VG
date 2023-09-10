@@ -19,7 +19,6 @@ from ...data_generation.nr3d import decode_stimulus_string
 from ..three_d_object import ThreeDObject
 from .pc_transforms import ChromaticTranslation, RandomSymmetry, RandomNoise, Random3AxisRotation
 import torchvision.transforms as T
-from transformers import BertTokenizer, BertModel
 
 
 def unique_items_in_list(list1):
@@ -55,7 +54,7 @@ class ListeningDataset(Dataset):
                  anchors_mode="cot", max_anchors=2, predict_lang_anchors=False, 
                  shuffle_objects=None, pc_transforms=None, textaug_paraphrase_percentage=None, shuffle_objects_percentage=None,
                  target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False,
-                 scanrefer=False, feedGTPath=False, multicls_multilabel=False, max_test_objects=None, include_anchor_distractors=False
+                 anchors_ids_type=None, scanrefer=False, feedGTPath=False, multicls_multilabel=False, max_test_objects=None, include_anchor_distractors=False
                  ):
 
         self.references = references
@@ -83,6 +82,7 @@ class ListeningDataset(Dataset):
         self.distractor_aux_loss_flag = distractor_aux_loss_flag
         self.is_train = is_train
         #new Features
+        self.anchors_ids_type = anchors_ids_type
         self.scanrefer = scanrefer
         self.feedGTPath = feedGTPath
         self.multicls_multilabel = multicls_multilabel
@@ -146,6 +146,22 @@ class ListeningDataset(Dataset):
         self.anchors_len = 0
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
             
+            if is_nr3d:
+                if self.anchors_ids_type == "pseudoWneg" or self.anchors_ids_type == "pseudoWneg_old":
+                    self.anchors_ids = ref['anchor_ids']
+                    path = ref['path']
+                elif self.anchors_ids_type == "pseudoWOneg":
+                    self.anchors_ids = ref['ours_with_neg_ids']
+                    path = ref['our_neg_anchor_names']
+                elif self.anchors_ids_type == "ourPathGTids":
+                    self.anchors_ids = ref['our_gt_id']
+                    path = ref['path']
+                elif self.anchors_ids_type == "GT":
+                    self.anchors_ids = ref['true_gt_id']
+                    path = ref['true_gt_anchor_names']
+            else:
+                self.anchors_ids = ref['anchor_ids']
+                
             if self.scanrefer:
                 self.anchors_ids = self.get_scanrefer_anchor_ids(ref['anchor_ids'])
             else:
@@ -605,6 +621,7 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    is_train=split=='train',
                                    distractor_aux_loss_flag=args.distractor_aux_loss_flag, 
                                    #New Features in SAT 
+                                   anchors_ids_type=args.anchors_ids_type,
                                    scanrefer=args.scanrefer,
                                    feedGTPath=args.feedGTPath,
                                    multicls_multilabel=args.multicls_multilabel,

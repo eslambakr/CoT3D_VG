@@ -134,7 +134,6 @@ if __name__ == '__main__':
         criteria['lang_logits'] = nn.CrossEntropyLoss(reduction=reduction).to(device)
         criteria['lang_logit_aux']= nn.CrossEntropyLoss(reduction=reduction).to(device)
     
-    
     model = instantiate_referit3d_net(args, vocab, n_classes, class_to_idx).to(device)
     args.n_obj_classes = n_classes
     same_backbone_lr = False

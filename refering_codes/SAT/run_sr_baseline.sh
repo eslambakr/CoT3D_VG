@@ -1,10 +1,20 @@
+#!/bin/bash
+#SBATCH --job-name=cot_sr_10%__1anchors_batch64_GT
+#SBATCH -N 1
+#SBATCH -o cot_sr_10%__1anchors_batch64_GT.out
+#SBATCH -e cot_cot_sr_10%__1anchors_batch64_GT.err
+#SBATCH --mail-user=mahmoud.ahmed@kaust.edu.sa
+#SBATCH --mail-type=ALL
+#SBATCH --time=23:00:00
+#SBATCH --mem=15G
+#SBATCH --gres=gpu:gtx1080ti:1
 module load cuda/10.1.243
 
-cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/SAT
-/home/abdelrem/anaconda3/envs/refer3d_cuda/bin/python -u train_referit3d.py \
-    -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_sr3d_org/keep_all_points_with_global_scan_alignment/keep_all_points_with_global_scan_alignment.pkl \
-    -referit3D-file /home/abdelrem/3d_codes/scannet_dataset/scannet/sr3d.csv \
-    --log-dir logs/cot_sr_70%_2d_fixed_reportanchoracc_5lr_0.1lrmmt_warmupFalse_mvtlrschedule \
+cd /home/ahmems0a/CoT3D_VG/refering_codes/SAT
+python train_referit3d.py \
+    -scannet-file /lustre/scratch/project/k1546/scannet/keep_all_points_00_view_with_global_scan_alignment/keep_all_points_00_view_with_global_scan_alignment.pkl \
+    -referit3D-file /home/ahmems0a/CoT3D_VG/refering_codes/SAT/referit3d/data/sr3d.csv \
+    --log-dir logs/cot_sr_10% \
     --patience 100 \
     --max-train-epochs 100 \
     --init-lr 5e-4 \
@@ -24,6 +34,6 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/SAT
     --predict_lang_anchors True \
     --lang_filter_objs False \
     --visaug_shuffle_mode 'none' \
-    --visaug_extracted_obj_path '/home/abdelrem/3d_codes/CoT3D_VG/data/sr3d/' \
+    --visaug_extracted_obj_path '/home/ahmems0a/CoT3D_VG/refering_codes/SAT/referit3d/data/' \
     --visaug_pc_augment False \
-    --train_data_percent 0.7 \
+    --train_data_percent 0.1 \

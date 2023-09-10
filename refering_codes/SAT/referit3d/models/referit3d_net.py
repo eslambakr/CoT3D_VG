@@ -196,7 +196,7 @@ class MMT_ReferIt3DNet(nn.Module):
             self.matching_cls = MatchingLinear(input_size=MMT_HIDDEN_SIZE)
             if self.context_2d=='unaligned':
                 self.matching_cls_2D = MatchingLinear(input_size=MMT_HIDDEN_SIZE)
-            
+        print("The end of Instantiation...")
     def __call__(self, batch: dict,  epoch=None) -> dict:
         result = defaultdict(lambda: None)
 
@@ -350,7 +350,7 @@ def instantiate_referit3d_net(args: argparse.Namespace, vocab: Vocabulary, n_obj
     geo_out_dim = args.object_latent_dim
     lang_out_dim = args.language_latent_dim
     mmt_out_dim = args.mmt_latent_dim
-
+    # import pdb ;pdb.set_trace()
     # make an object (segment) encoder for point-clouds with color
     if args.object_encoder == 'pnet_pp':
         object_encoder = single_object_encoder(geo_out_dim)

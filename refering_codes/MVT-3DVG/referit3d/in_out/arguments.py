@@ -94,7 +94,10 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--multicls_multilabel', type=str2bool, default=False, help="Remove duplicates from the path and deal with it as multi-labels.")
     parser.add_argument('--remove_repeated_anchors', type=str2bool, default=False, help="Remove duplicates from the path and sample anchor_id to assign it.")
     parser.add_argument('--include_anchor_distractors', type=str2bool, default=False, help="This flag determines whether we should include the anchors' distractors or not.")
-
+    parser.add_argument('--anchors_ids_type', type=str, default=False,  help="Four options are available: [pseudoWneg_old, pseudoWneg, pseudoWOneg, ourPathGTids, GT]\
+                         1- pseudo w negatives old file. 2- pseudo w negatives. 3- pseudo w/o negatives. \
+                         4- our path combined with GT boxes ids. 5- GT path combined with GT boxes ids.")
+    
     #
     # Model arguments
     #

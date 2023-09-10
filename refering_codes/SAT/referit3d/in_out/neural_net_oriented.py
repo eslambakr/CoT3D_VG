@@ -159,8 +159,17 @@ def load_referential_data(args, referit_csv, scans_split):
     referit_data = pd.read_csv(referit_csv)
 
     is_nr = True if 'nr' in args.referit3D_file else False
+    # if is_nr and (args.anchors != 'none'):
+    #     referit_data = get_logical_pth_lang(referit_data)
+    
     if is_nr and (args.anchors != 'none'):
-        referit_data = get_logical_pth_lang(referit_data)
+        if args.anchors_ids_type == "pseudoWneg" or args.anchors_ids_type == "pseudoWneg_old" or args.anchors_ids_type == "ourPathGTids":
+            anchor_path_name = "path"
+        elif args.anchors_ids_type == "pseudoWOneg":
+            anchor_path_name = "our_neg_anchor_names"
+        elif args.anchors_ids_type == "GT":
+            anchor_path_name = "true_gt_anchor_names"
+        referit_data = get_logical_pth_lang(referit_data, key=anchor_path_name)
     
     if args.textaug_paraphrase_percentage:
         referit_data = clean_paraphrased(referit_data)
@@ -173,7 +182,19 @@ def load_referential_data(args, referit_csv, scans_split):
               'mention to the target class {}->{}'.format(n_original, len(referit_data)))
 
     keys = ['tokens', 'instance_type', 'scan_id', 'dataset', 'target_id', 'utterance', 'stimulus_id']
-    added_keys = ['path', 'anchor_ids', 'num_anchors', 'paraphrases'] if is_nr else ['anchors_types', 'anchor_ids']
+    # added_keys = ['path', 'anchor_ids', 'num_anchors', 'paraphrases'] if is_nr else ['anchors_types', 'anchor_ids']
+    if is_nr:
+        added_keys = ['path', 'anchor_ids', 'num_anchors', 'paraphrases']
+        if args.anchors_ids_type == "pseudoWOneg":
+            added_keys += ['our_neg_anchor_names', 'ours_with_neg_ids']
+        elif args.anchors_ids_type == "ourPathGTids":
+            added_keys += ['our_gt_id']
+        elif args.anchors_ids_type == "GT":
+            keys = ['tokens', 'instance_type', 'scan_id', 'dataset', 'target_id', 'utterance', 'stimulus_id', 'true_gt_anchor_names', 'true_gt_id']
+            added_keys = []
+    else:
+        added_keys = ['anchors_types', 'anchor_ids']
+        
     keys += added_keys
     referit_data = referit_data[keys]
     referit_data.tokens = referit_data['tokens'].apply(literal_eval)
@@ -181,7 +202,15 @@ def load_referential_data(args, referit_csv, scans_split):
     # Add the is_train data to the pandas data frame (needed in creating data loaders for the train and test)
     is_train = referit_data.scan_id.apply(lambda x: x in scans_split['train'])
     referit_data['is_train'] = is_train
-
+    
+    # Add the 'num_anchors' data to the pandas data frame
+    if is_nr and args.anchors_ids_type == "GT":
+        num_anchors = referit_data['true_gt_id'].apply(lambda x: len(x))
+    else:
+        num_anchors = referit_data['anchor_ids'].apply(literal_eval)
+        num_anchors = num_anchors.apply(lambda x: len(x))
+    referit_data['num_anchors'] = num_anchors
+    
     # Trim data based on token length
     train_token_lens = referit_data.tokens[is_train].apply(lambda x: len(x))
     print('{}-th percentile of token length for remaining (training) data'

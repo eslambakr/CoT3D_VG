@@ -319,7 +319,7 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             return (total_loss, trg_pass[:, -1])
 
-    def forward(self, batch: dict, epoch=None):
+    def forward(self, batch: dict, epoch=None, compute_loss=True, output_attentions=False, output_hidden_states=False):
         # batch['class_labels']: GT class of each obj
         # batch['target_class']：GT class of target obj
         # batch['target_pos']: GT id
@@ -409,8 +409,15 @@ class ReferIt3DNet_transformer(nn.Module):
             batch['txt_masks'] = torch.ones((lang_infos.shape[0], lang_infos.shape[1]), dtype=torch.bool, device=lang_infos.device)
             out_feats = self.refer_encoder(lang_infos, batch['txt_masks'], 
                                          obj_infos, batch['obj_locs'].float(), batch['obj_masks'],
-                                         output_attentions=True, output_hidden_states=True,)  # [128, L, 768])
+                                         output_attentions=output_attentions, output_hidden_states=output_hidden_states,)  # [128, L, 768])
             agg_feats = out_feats['obj_embeds']
+            if output_attentions or output_hidden_states:
+                multi_modal_trans_att_dict = {}
+                if output_attentions:
+                    multi_modal_trans_att_dict['all_cross_attns'] = out_feats['all_cross_attns']
+                    multi_modal_trans_att_dict['all_self_attns'] = out_feats['all_self_attns']
+                if output_hidden_states:
+                    multi_modal_trans_att_dict['all_hidden_states'] = out_feats['all_hidden_states']
         else:
             # MVT Fusion-Transformer:
             cat_infos = obj_infos.reshape(B * self.view_number, -1, self.inner_dim)  # [512, 52, 768]
@@ -463,6 +470,8 @@ class ReferIt3DNet_transformer(nn.Module):
 
         if self.obj_cls_post:
             CLASS_LOGITS_post = self.obj_clf_post(agg_feats)
+        else:
+            CLASS_LOGITS_post = None
             
         if self.anchors_mode == "cot":
             if self.cot_type == "cross":
@@ -497,11 +506,18 @@ class ReferIt3DNet_transformer(nn.Module):
         else:
             distractor_aux_logits = None
         # <LOSS>: ref_cls
-        LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS, AUX_LANG_LOGITS, distractor_aux_logits, CLASS_LOGITS_post)  # []
+        if compute_loss:
+            LOSS = self.compute_loss(batch, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS, AUX_LANG_LOGITS, distractor_aux_logits, CLASS_LOGITS_post)  # []
+        else:
+            LOSS = None
+        
         if self.anchors_mode != 'none':
             LOGITS = LOGITS[:, -1]
         
         if self.predict_lang_anchors:
             LANG_LOGITS = LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, self.lang_out)[:,:,-1]
         
+        #TODO: Eslam should clean the return by making it return dict better.
+        if self.vil_flag and (output_attentions or output_hidden_states):
+            return LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS, multi_modal_trans_att_dict
         return LOSS, CLASS_LOGITS, LANG_LOGITS, LOGITS, AUX_LOGITS

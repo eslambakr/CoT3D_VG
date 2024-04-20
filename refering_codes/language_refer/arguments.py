@@ -124,6 +124,10 @@ def fetch_base_argument_parser() -> ArgumentParser:
     parser.add_argument('--per-device-train-batch-size', type=int, default=35)
     parser.add_argument('--per-device-eval-batch-size', type=int, default=100)
 
+    # COT parameters:
+    parser.add_argument('--train_data_percent', type=float, default=1.0, 
+                        help="sample from the training data given this ratio, for data effeciency expirements.")
+
     return parser
 
 

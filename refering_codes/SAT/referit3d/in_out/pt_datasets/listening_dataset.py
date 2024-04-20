@@ -27,7 +27,8 @@ class ListeningDataset(Dataset):
                  num_class_dim=525, evalmode=False, 
                  anchors_mode="cot", max_anchors=2, predict_lang_anchors=False, 
                  shuffle_objects=None, pc_transforms=None, textaug_paraphrase_percentage=None, shuffle_objects_percentage=None,
-                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False
+                 target_aug_percentage=None, is_train=None, distractor_aux_loss_flag=False, anchors_ids_type=None, scanrefer=False,
+                 feedGTPath=False, multicls_multilabel=False, max_test_objects=None, include_anchor_distractors=False
                  ):
 
         self.references = references
@@ -53,9 +54,15 @@ class ListeningDataset(Dataset):
         self.textaug_paraphrase_percentage = textaug_paraphrase_percentage
         self.target_aug_percentage = target_aug_percentage
         self.distractor_aux_loss_flag = distractor_aux_loss_flag
+        self.anchors_ids_type = anchors_ids_type
         self.is_train = is_train
+        self.scanrefer = scanrefer
+        self.feedGTPath = feedGTPath
+        self.multicls_multilabel = multicls_multilabel
+        self.max_test_objects = max_test_objects
+        self.include_anchor_distractors = include_anchor_distractors
+
         #TODO: Get this file and change the path 
-        
         with open('referit3d/data/unique_rel_map_dict_opposite.json') as f:
             self.opposite_dict = json.load(f)
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
@@ -105,18 +112,36 @@ class ListeningDataset(Dataset):
         path = None
         self.anchors_len = 0
         if self.anchors_mode != 'none' or self.predict_lang_anchors:
-            self.anchors_ids = self.get_anchor_ids(ref['anchor_ids'])
             if is_nr3d:
-                path = ref['path']
-                if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
-                    path.reverse()
-                    target = scan.three_d_objects[self.anchors_ids[0]]  # [0] as we are sure it is only one anchor
-                    self.anchors_ids = [ref['target_id']]
-                    #mask = self.unique_rel_df[self.unique_rel_df.utterance.str.lower().isin([ref['utterance']])]
-                    relation = sample(relation_synonyms[self.opposite_dict[ref['relation']]], 1)[0]
-                    #relation = sample(relation_synonyms[self.opposite_dict[mask.relation.values[0]]], 1)[0]
-                    tokens = path[-1] + " " + relation + " " + path[0]
-                    target_augmented_flag = True
+                if self.anchors_ids_type == "pseudoWneg" or self.anchors_ids_type == "pseudoWneg_old":
+                    self.anchors_ids = ref['anchor_ids']
+                    path = ref['path']
+                elif self.anchors_ids_type == "pseudoWOneg":
+                    self.anchors_ids = ref['ours_with_neg_ids']
+                    path = ref['our_neg_anchor_names']
+                elif self.anchors_ids_type == "ourPathGTids":
+                    self.anchors_ids = ref['our_gt_id']
+                    path = ref['path']
+                elif self.anchors_ids_type == "GT":
+                    self.anchors_ids = ref['true_gt_id']
+                    path = ref['true_gt_anchor_names']
+            else:
+                self.anchors_ids = ref['anchor_ids']
+            
+            if self.scanrefer:
+                self.anchors_ids = self.get_scanrefer_anchor_ids(self.anchors_ids)
+            else:
+                self.anchors_ids = self.get_anchor_ids(self.anchors_ids)
+
+            if flipcoin(self.target_aug_percentage) and (len(path)==2) and self.is_train and (type(ref['relation'])==str):  # swap target with anchor
+                path.reverse()
+                target = scan.three_d_objects[self.anchors_ids[0]]  # [0] as we are sure it is only one anchor
+                self.anchors_ids = [ref['target_id']]
+                #mask = self.unique_rel_df[self.unique_rel_df.utterance.str.lower().isin([ref['utterance']])]
+                relation = sample(relation_synonyms[self.opposite_dict[ref['relation']]], 1)[0]
+                #relation = sample(relation_synonyms[self.opposite_dict[mask.relation.values[0]]], 1)[0]
+                tokens = path[-1] + " " + relation + " " + path[0]
+                target_augmented_flag = True
 
             anchors = []
             for anchor_id in self.anchors_ids:
@@ -151,7 +176,7 @@ class ListeningDataset(Dataset):
         already_included = [target_label]
 
         # Add anchors' distractors:
-        if self.anchors_mode != 'none' or self.predict_lang_anchors:
+        if (self.anchors_mode != 'none' or self.predict_lang_anchors) and self.include_anchor_distractors:
             anchor_labels = [anchor.instance_label for anchor in anchors]
             anchors_distractors = []
             for anchor in anchors:
@@ -491,7 +516,13 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    textaug_paraphrase_percentage=args.textaug_paraphrase_percentage,
                                    target_aug_percentage=args.target_aug_percentage,
                                    is_train=split=='train',
-                                   distractor_aux_loss_flag=args.distractor_aux_loss_flag
+                                   distractor_aux_loss_flag=args.distractor_aux_loss_flag,
+                                   anchors_ids_type=args.anchors_ids_type,
+                                   scanrefer=args.scanrefer,
+                                   feedGTPath=args.feedGTPath,
+                                   multicls_multilabel=args.multicls_multilabel,
+                                   max_test_objects=args.max_test_objects,
+                                   include_anchor_distractors=args.include_anchor_distractors
                                    )
 
         seed = seed

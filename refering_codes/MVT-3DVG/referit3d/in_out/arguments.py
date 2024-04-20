@@ -94,6 +94,7 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--multicls_multilabel', type=str2bool, default=False, help="Remove duplicates from the path and deal with it as multi-labels.")
     parser.add_argument('--remove_repeated_anchors', type=str2bool, default=False, help="Remove duplicates from the path and sample anchor_id to assign it.")
     parser.add_argument('--include_anchor_distractors', type=str2bool, default=False, help="This flag determines whether we should include the anchors' distractors or not.")
+    parser.add_argument('--detr_trans', type=str2bool, default=False, help="Use DETR Trans to visualize the attention maps for CoT module.")
 
     #
     # Model arguments

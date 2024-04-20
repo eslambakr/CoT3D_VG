@@ -19,6 +19,7 @@ from transformers import BertTokenizer, BertModel, BertConfig
 from referit3d.models import MLP
 from referit3d.models.CoT.seq_seq_transformer import CoTTransformer
 from referit3d.models.CoT.lstm_w_att import DecoderWithAttention
+from referit3d.models.CoT.detr_transformer import TransformerDecoderLayer, TransformerDecoder
 import time
 
 
@@ -53,6 +54,7 @@ class ReferIt3DNet_transformer(nn.Module):
         self.obj_cls_alpha = args.obj_cls_alpha
 
         self.anchors_mode = args.anchors
+        self.detr_trans = args.detr_trans
         self.cot_type = args.cot_type
         self.predict_lang_anchors = args.predict_lang_anchors
         self.lang_filter_objs = args.lang_filter_objs
@@ -102,7 +104,7 @@ class ReferIt3DNet_transformer(nn.Module):
                                                                                     nhead=self.decoder_nhead_num,
                                                                                     dim_feedforward=2048,
                                                                                     activation="gelu"),
-                                                   num_layers=self.decoder_layer_num)
+                                                num_layers=self.decoder_layer_num)
 
         # Classifier heads
         if self.is_nr and self.predict_lang_anchors:
@@ -146,8 +148,17 @@ class ReferIt3DNet_transformer(nn.Module):
                 self.parallel_embedding = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                     nn.ReLU(), nn.Dropout(self.dropout_rate))
                 self.object_language_clf_parallel = nn.Linear(self.inner_dim, self.ref_out)
-                self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim, nhead=16, dim_feedforward=512,
-                                                                                                activation="gelu"), num_layers=1)
+                if self.detr_trans:
+                    print(" -------- Activating DETR Trans -----------")
+                    decoder_layer = TransformerDecoderLayer(d_model=self.inner_dim, nhead=16, dim_feedforward=512,
+                                                            dropout=0.1, activation="gelu", normalize_before=False)
+                    decoder_norm = nn.LayerNorm(self.inner_dim)
+                    self.object_language_clf = TransformerDecoder(decoder_layer, num_layers=1, norm=decoder_norm,
+                                                                  return_intermediate=False)
+                else:
+                    self.object_language_clf = nn.TransformerDecoder(torch.nn.TransformerDecoderLayer(d_model=self.inner_dim,
+                                                                                                      nhead=16, dim_feedforward=512,
+                                                                                                      activation="gelu"), num_layers=1)
                 self.fc_out = nn.Sequential(nn.Linear(self.inner_dim, self.inner_dim),
                                                         nn.ReLU(), nn.Dropout(self.dropout_rate),
                                                         nn.Linear(self.inner_dim, self.ref_out))
@@ -426,7 +437,10 @@ class ReferIt3DNet_transformer(nn.Module):
                 AUX_LOGITS = AUX_LOGITS.permute(0, 2, 1)  # [N, num_cls, anchors_length+1] --> [N, anchors_length+1, num_cls]
                 trg_pass = torch.argmax(AUX_LOGITS, dim=-1)  # [N, trg_seq_length]
                 sampled_embd = vector_gather(parallel_embd, trg_pass)  # [N, num_cls, E] --> [N, anchors_length+1, E]
-                cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), sampled_embd.permute(1, 0, 2)).permute(1, 0, 2)  # [N, anchors_length+1, E]
+                if self.detr_trans:
+                    cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), sampled_embd.permute(1, 0, 2))[0].permute(1, 0, 2)
+                else:
+                    cot_out = self.object_language_clf(agg_feats.permute(1, 0, 2), sampled_embd.permute(1, 0, 2)).permute(1, 0, 2)  # [N, anchors_length+1, E]
                 LOGITS = self.fc_out(cot_out).permute(0, 2, 1)  # [N, anchors_length+1, E] --> [N, anchors_length+1, num_cls]
             elif self.cot_type == "causal":
                 parallel_embd = self.parallel_embedding(agg_feats)  # [N, num_cls, E] --> [N, num_cls, E]

@@ -8,22 +8,22 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_nr3d_org/keep_all_points_00_view_with_global_scan_alignment/keep_all_points_00_view_with_global_scan_alignment.pkl \
     -referit3D-file /home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3D_with_TRUE_GT.csv \
     --bert-pretrain-path /home/abdelrem/3d_codes/MVT-3DVG/weights/bert-base-uncased/ \
-    --log-dir logs/nr/MVT_nr3d_baseline_drop15%_data100% \
+    --log-dir logs/nr/del_DetrTrans_MVT_nr3d_baseline_drop15%_data100% \
     --n-workers 8 \
     --model 'referIt3DNet_transformer' \
     --unit-sphere-norm True \
-    --batch-size 24 \
+    --batch-size 1 \
     --encoder-layer-num 3 \
     --decoder-layer-num 4 \
     --decoder-nhead-num 8 \
-    --gpu "0" \
+    --gpu "1" \
     --view_number 4 \
     --rotate_number 4 \
     --label-lang-sup True \
-    --anchors "none" \
+    --anchors "cot" \
     --max-test-objects 52 \
     --cot_type "cross" \
-    --predict_lang_anchors False \
+    --predict_lang_anchors True \
     --distractor_aux_loss_flag False \
     --lang_filter_objs False \
     --visaug_shuffle_mode 'none' \
@@ -43,6 +43,10 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     --max-seq-len 24 \
     --feedGTPath False \
     --multicls_multilabel False \
-    --remove_repeated_anchors False \
+    --remove_repeated_anchors True \
     --include_anchor_distractors False \
-    --init-lr 0.0005
+    --init-lr 0.0005 \
+    --detr_trans True \
+    --mode evaluate \
+    --resume-path logs/nr/del_DetrTrans_MVT_nr3d_baseline_drop15%_data100%/11-16-2023-00-04-23/checkpoints/best_model.pth \
+    --n-workers 1

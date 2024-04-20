@@ -201,7 +201,7 @@ def load_referential_data(args, referit_csv, scans_split):
     referit_data['is_train'] = is_train
 
     # Add the 'num_anchors' data to the pandas data frame
-    if is_nr:
+    if is_nr and args.anchors_ids_type == "GT":
         num_anchors = referit_data['true_gt_id'].apply(lambda x: len(x))
     else:
         num_anchors = referit_data['anchor_ids'].apply(literal_eval)

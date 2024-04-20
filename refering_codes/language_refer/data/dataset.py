@@ -470,6 +470,7 @@ class InstanceSampler:
 def fetch_instance_items_and_storage_dict(
         args: Namespace,
         split_name: str) -> Tuple[Dict[str, List[Any]], InstanceStorage]:
+    
     storage = fetch_instance_storage(dataset_name=args.dataset_name)
 
     if args.use_custom_df:
@@ -483,6 +484,9 @@ def fetch_instance_items_and_storage_dict(
             use_view_independent=args.use_view_independent,
             use_view_dependent_explicit=args.use_view_dependent_explicit,
             use_view_dependent_implicit=args.use_view_dependent_implicit)
+
+    if split_name=="train" and args.train_data_percent < 1:
+        df = df.sample(frac=args.train_data_percent)
 
     if args.dataset_name == 'nr3d' and split_name == 'test' and not args.use_custom_df:
         assignment_ids = torch.load(str(fetch_nr3d_eval_assignment_id_list_path()))
@@ -580,8 +584,8 @@ def fetch_dataset(
         args: Namespace,
         split_name: str,
         tokenizer: DistilBertTokenizerFast) -> Dataset:
+    
     instance_items_dict, storage = fetch_instance_items_and_storage_dict(args, split_name)
-
     rng = np.random.default_rng(0)
     encoded_value_dict = encode_data_with_tokenizer(
         tokenizer=tokenizer,

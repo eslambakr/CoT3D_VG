@@ -8,6 +8,10 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
+import csv
+import ast
 
 from torch.utils.data import DataLoader
 from datetime import datetime
@@ -19,6 +23,21 @@ from lib.dataset import ScannetReferenceDataset
 from lib.solver import Solver
 from lib.config import CONF
 from models.refnet import RefNet
+
+
+def str2bool(v):
+    """
+    Boolean values for argparse
+    """
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+    
 
 SCANREFER_TRAIN = json.load(open(os.path.join(CONF.PATH.DATA, "ScanRefer_filtered_train.json")))
 SCANREFER_VAL = json.load(open(os.path.join(CONF.PATH.DATA, "ScanRefer_filtered_val.json")))
@@ -35,10 +54,14 @@ def get_dataloader(args, scanrefer, all_scene_list, split, config, augment):
         use_height=(not args.no_height),
         use_color=args.use_color, 
         use_normal=args.use_normal, 
-        use_multiview=args.use_multiview
+        use_multiview=args.use_multiview,
+        args=args
     )
     # dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    if split == "val":
+        dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+    else:
+        dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
 
     return dataset, dataloader
 
@@ -54,7 +77,9 @@ def get_model(args):
         num_proposal=args.num_proposals,
         use_lang_classifier=(not args.no_lang_cls),
         use_bidir=args.use_bidir,
-        no_reference=args.no_reference
+        no_reference=args.no_reference,
+        anchors=args.anchors, cot_type=args.cot_type, 
+        predict_lang_anchors=args.predict_lang_anchors, max_num_anchors=args.max_num_anchors, feedcotpath=args.feedcotpath
     )
 
     # trainable model
@@ -106,7 +131,16 @@ def get_num_params(model):
 
 def get_solver(args, dataloader):
     model = get_model(args)
-    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
+    if args.anchors == "cot":
+        param_list = []
+        for name, param in model.named_parameters():
+            if "object_language_clf" in name:
+                param_list.append({'params': param, 'lr': args.lr * args.cot_trans_lr_scale})
+            else:
+                param_list.append({'params': param, 'lr': args.lr})
+        optimizer = optim.Adam(param_list, lr=args.lr, weight_decay=args.wd)
+    else:
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
 
     if args.use_checkpoint:
         print("loading checkpoint {}...".format(args.use_checkpoint))
@@ -140,7 +174,8 @@ def get_solver(args, dataloader):
         lr_decay_step=LR_DECAY_STEP,
         lr_decay_rate=LR_DECAY_RATE,
         bn_decay_step=BN_DECAY_STEP,
-        bn_decay_rate=BN_DECAY_RATE
+        bn_decay_rate=BN_DECAY_RATE,
+        args=args
     )
     num_params = get_num_params(model)
 
@@ -164,6 +199,47 @@ def get_scannet_scene_list(split):
     scene_list = sorted([line.rstrip() for line in open(os.path.join(CONF.PATH.SCANNET_META, "scannetv2_{}.txt".format(split)))])
 
     return scene_list
+
+
+def merge_cot_data(org_data, cot_data_dict):
+    merged_list = []
+    for j in tqdm(range(len(org_data))):
+        found_flag = False
+        org_uni_id = org_data[j]['scene_id'] + str(org_data[j]['object_id']) + str(org_data[j]['ann_id'])  # "<scene_id>-<object_id>_<ann_id>"
+        for i in range(len(cot_data_dict)):
+            cot_uni_id = cot_data_dict[i]['stimulus_id'] + str(cot_data_dict[i]['target_id']) + str(cot_data_dict[i]['ann_id'])  # "<scene_id>-<object_id>_<ann_id>"
+            if cot_uni_id == org_uni_id:
+                merged_dict = org_data[j].copy()
+                merged_dict.update({'path': cot_data_dict[i]['path'], 'anchor_ids': cot_data_dict[i]['anchor_ids']})
+                merged_list.append(merged_dict)
+                found_flag = True
+                break
+        if not found_flag:
+            merged_dict = org_data[j].copy()
+            merged_dict.update({'path': [merged_dict['object_name']], 'anchor_ids': [merged_dict['object_id']]})
+            merged_list.append(merged_dict)
+    print("--- The number of merged CoT items: ", len(merged_list))
+
+    return merged_list
+
+
+def clean_path_and_anchorsid(cot_data_list_of_dict):
+    for i in tqdm(range(len(cot_data_list_of_dict))):
+        cot_data_list_of_dict[i]['path'] = ast.literal_eval(cot_data_list_of_dict[i]['path'])
+        cot_data_list_of_dict[i]['anchor_ids'] = ast.literal_eval(cot_data_list_of_dict[i]['anchor_ids'])
+        cot_data_list_of_dict[i]['anchor_ids'] = [int(anchor_id) for anchor_id in cot_data_list_of_dict[i]['anchor_ids']]
+        cot_data_list_of_dict[i]["object_id"] = str(cot_data_list_of_dict[i]["object_id"])
+        cot_data_list_of_dict[i]["ann_id"] = str(cot_data_list_of_dict[i]["ann_id"])
+
+
+def save_listofdicts_to_csv(list_of_dicts, saving_dir):
+    keys = list_of_dicts[0].keys()
+
+    with open(saving_dir, 'w', newline='') as output_file:
+        dict_writer = csv.DictWriter(output_file, keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(list_of_dicts)
+
 
 def get_scanrefer(scanrefer_train, scanrefer_val, num_scenes):
     if args.no_reference:
@@ -202,6 +278,36 @@ def get_scanrefer(scanrefer_train, scanrefer_val, num_scenes):
 
     # all scanrefer scene
     all_scene_list = train_scene_list + val_scene_list
+
+    if args.newdataset:
+        load_preprocessed_data = False
+        if load_preprocessed_data:
+            new_scanrefer_val = pd.read_csv("./data/merged_val_scanrefer_cot.csv").to_dict('records')
+            clean_path_and_anchorsid(new_scanrefer_val)
+            new_scanrefer_train = pd.read_csv("./data/merged_train_scanrefer_cot.csv").to_dict('records')
+            clean_path_and_anchorsid(new_scanrefer_train)
+            print("--- The number of merged CoT items for training: ", len(new_scanrefer_train))
+            print("--- The number of merged CoT items for val: ", len(new_scanrefer_val))
+            dummy_counter = 0
+            for i in range(len(new_scanrefer_train)):
+                if len(new_scanrefer_train[i]['anchor_ids']) == 6:
+                    dummy_counter += 1
+            print(100*dummy_counter/len(new_scanrefer_train))
+            dummy_counter = 0
+            for i in range(len(new_scanrefer_val)):
+                if len(new_scanrefer_val[i]['anchor_ids']) == 6:
+                    dummy_counter += 1
+            print(100*dummy_counter/len(new_scanrefer_val))
+        else:
+            cot_data_dict = pd.read_csv("./data/scanrefer_cot_sortFixed.csv").to_dict('records')
+            new_scanrefer_train = merge_cot_data(org_data=new_scanrefer_train, cot_data_dict=cot_data_dict)
+            save_listofdicts_to_csv(new_scanrefer_train, saving_dir="./data/merged_train_scanrefer_cot.csv")
+            new_scanrefer_val = merge_cot_data(org_data=new_scanrefer_val, cot_data_dict=cot_data_dict)
+            save_listofdicts_to_csv(new_scanrefer_val, saving_dir="./data/merged_val_scanrefer_cot.csv")
+            exit()
+    
+    # Truncate the data based on the desired percentage:
+    new_scanrefer_train = new_scanrefer_train[:int(len(new_scanrefer_train)*args.train_data_percent)]
 
     print("train on {} samples and val on {} samples".format(len(new_scanrefer_train), len(new_scanrefer_val)))
 
@@ -256,6 +362,21 @@ if __name__ == "__main__":
     parser.add_argument("--use_bidir", action="store_true", help="Use bi-directional GRU.")
     parser.add_argument("--use_pretrained", type=str, help="Specify the folder name containing the pretrained detection module.")
     parser.add_argument("--use_checkpoint", type=str, help="Specify the checkpoint root", default="")
+    # CoT arguments:
+    parser.add_argument('--anchors', type=str, default='none', choices=['parallel', 'cot', 'none'],
+                        help='train using all anchors in parallel, or sequential/CoT, or with no anchors')
+    parser.add_argument('--cot_type', type=str, default='cross', choices=['cross', 'causal', 'self_cons'],
+                        help='cross:  transformer decoder will refine all inputs based even on the future predections\
+                              causal: transformer decoder will refine inputs based on causal manner(only previous predictions)')
+    parser.add_argument('--predict_lang_anchors', type=str2bool, default=False)
+    parser.add_argument('--max_num_anchors', type=int, default=1,  help="maximum number of allowed anchors")
+    parser.add_argument('--train_data_percent', type=float, default=1.0, 
+                        help="sample from the training data given this ratio, for data effeciency expirements.")
+    parser.add_argument('--distractor_aux_loss_flag', type=str2bool, default=False,  help="Add head to predict which objs are distractors")
+    parser.add_argument('--newdataset', type=str2bool, default=False,  help="Use the new dataset.")
+    parser.add_argument('--feedcotpath', type=str2bool, default=False,  help="Feed the CoT path as an input to the network.")
+    parser.add_argument('--cot_trans_lr_scale', type=float, default=1,  help="CoT Transformer LR scaler")
+
     args = parser.parse_args()
 
     # setting

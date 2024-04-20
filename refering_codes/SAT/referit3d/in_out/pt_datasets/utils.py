@@ -32,11 +32,11 @@ def create_sr3d_classes_2_idx(json_pth):
 
     return class_to_idx
 
-def get_logical_pth_lang(data_dict):
+def get_logical_pth_lang(data_dict, key):
     """
     Convert the string into readable list
     """
-    for idx, row in enumerate(data_dict["path"]):
+    for idx, row in enumerate(data_dict[key]):
         clean_objs = []
         if "'" in row:
             objects = row.split(',')
@@ -45,7 +45,7 @@ def get_logical_pth_lang(data_dict):
                 if '*' in obj:
                     obj = obj[1:]
                 clean_objs.append(obj)
-        data_dict["path"][idx] = clean_objs
+        data_dict[key][idx] = clean_objs
 
     return data_dict
 

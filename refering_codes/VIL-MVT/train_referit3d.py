@@ -20,6 +20,7 @@ from referit3d.in_out.pt_datasets.utils import create_sr3d_classes_2_idx
 from referit3d.utils import set_gpu_to_zero_position, create_logger, seed_training_code
 
 from referit3d.models.referit3d_net import ReferIt3DNet_transformer
+from referit3d.models.referit3d_net_teacher_student import ReferIt3DNetTeacherStudent
 from referit3d.models.referit3d_net_utils import single_epoch_train, evaluate_on_dataset
 from referit3d.models.utils import load_state_dicts, save_state_dicts
 from referit3d.analysis.deepnet_predictions import analyze_predictions
@@ -78,6 +79,48 @@ def log_train_test_information_objcls_alone():
     logger.info('Best so far {:.3f} (@epoch {})'.format(best_test_acc, best_test_epoch))
 
 
+def adjust_lr(in_model, args):
+    if gpu_num > 1:
+        param_list = [
+            {'params': in_model.module.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
+            {'params': in_model.module.refer_encoder.parameters(), 'lr': args.init_lr * 0.1},
+            {'params': in_model.module.object_encoder.parameters(), 'lr': args.init_lr},
+            {'params': in_model.module.obj_feature_mapping.parameters(), 'lr': args.init_lr},
+            {'params': in_model.module.box_feature_mapping.parameters(), 'lr': args.init_lr},
+            {'params': in_model.module.language_clf.parameters(), 'lr': args.init_lr},
+            {'params': in_model.module.object_language_clf.parameters(), 'lr': args.init_lr},
+        ]
+        if not args.label_lang_sup:
+            param_list.append({'params': in_model.module.obj_clf.parameters(), 'lr': args.init_lr})
+    else:
+        if args.train_objcls_alone_flag:
+            param_list = [
+                {'params': in_model.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
+                {'params': in_model.object_encoder.parameters(), 'lr': args.init_lr},
+                {'params': in_model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
+                {'params': in_model.box_feature_mapping.parameters(), 'lr': args.init_lr},
+                {'params': in_model.language_clf.parameters(), 'lr': args.init_lr},
+            ]
+        else:
+            param_list = [
+                {'params': in_model.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
+                {'params': in_model.refer_encoder.parameters(), 'lr': args.init_lr * 0.1},
+                {'params': in_model.object_encoder.parameters(), 'lr': args.init_lr},
+                {'params': in_model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
+                {'params': in_model.box_feature_mapping.parameters(), 'lr': args.init_lr},
+                {'params': in_model.language_clf.parameters(), 'lr': args.init_lr},
+                {'params': in_model.object_language_clf.parameters(), 'lr': args.init_lr*0.1},
+            ]
+            if not args.label_lang_sup:
+                param_list.append({'params': in_model.obj_clf.parameters(), 'lr': args.init_lr})
+            if args.anchors == 'cot':
+                param_list.append({'params': in_model.parallel_embedding.parameters(), 'lr': args.init_lr})
+                param_list.append({'params': in_model.object_language_clf_parallel.parameters(), 'lr': args.init_lr})
+                param_list.append({'params': in_model.fc_out.parameters(), 'lr': args.init_lr})
+
+    return param_list
+
+
 if __name__ == '__main__':
     # Parse arguments
     args = parse_arguments()
@@ -119,10 +162,7 @@ if __name__ == '__main__':
     if args.model == 'referIt3DNet_transformer':
         if args.vil_flag:
             if args.dist_type == "teacher_student":
-                model_teacher = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx,
-                                                          class_to_idx=class_to_idx, dist_mode="teacher")
-                model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx,
-                                                  class_to_idx=class_to_idx, dist_mode="student")
+                model = ReferIt3DNetTeacherStudent(args, n_classes, class_name_tokens, ignore_index=pad_idx, class_to_idx=class_to_idx)
             elif args.dist_type == "teacher":
                 model = ReferIt3DNet_transformer(args, n_classes, class_name_tokens, ignore_index=pad_idx, class_to_idx=class_to_idx, dist_mode="teacher")
             elif args.dist_type == "student":
@@ -145,52 +185,14 @@ if __name__ == '__main__':
 
     if gpu_num > 1:
         model = nn.DataParallel(model)
-        if args.vil_flag and args.dist_type == "teacher_student":
-            model_teacher = nn.DataParallel(model_teacher)
 
     model = model.to(device)
-    if args.vil_flag and args.dist_type == "teacher_student":
-            model_teacher = model_teacher.to(device)
     print(model)
 
-    # <1>
-    if gpu_num > 1:
-        param_list = [
-            {'params': model.module.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
-            {'params': model.module.refer_encoder.parameters(), 'lr': args.init_lr * 0.1},
-            {'params': model.module.object_encoder.parameters(), 'lr': args.init_lr},
-            {'params': model.module.obj_feature_mapping.parameters(), 'lr': args.init_lr},
-            {'params': model.module.box_feature_mapping.parameters(), 'lr': args.init_lr},
-            {'params': model.module.language_clf.parameters(), 'lr': args.init_lr},
-            {'params': model.module.object_language_clf.parameters(), 'lr': args.init_lr},
-        ]
-        if not args.label_lang_sup:
-            param_list.append({'params': model.module.obj_clf.parameters(), 'lr': args.init_lr})
+    if args.vil_flag and args.dist_type == "teacher_student":
+        param_list = adjust_lr(model.model_student, args)
     else:
-        if args.train_objcls_alone_flag:
-            param_list = [
-                {'params': model.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
-                {'params': model.object_encoder.parameters(), 'lr': args.init_lr},
-                {'params': model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
-                {'params': model.box_feature_mapping.parameters(), 'lr': args.init_lr},
-                {'params': model.language_clf.parameters(), 'lr': args.init_lr},
-            ]
-        else:
-            param_list = [
-                {'params': model.language_encoder.parameters(), 'lr': args.init_lr * 0.1},
-                {'params': model.refer_encoder.parameters(), 'lr': args.init_lr * 0.1},
-                {'params': model.object_encoder.parameters(), 'lr': args.init_lr},
-                {'params': model.obj_feature_mapping.parameters(), 'lr': args.init_lr},
-                {'params': model.box_feature_mapping.parameters(), 'lr': args.init_lr},
-                {'params': model.language_clf.parameters(), 'lr': args.init_lr},
-                {'params': model.object_language_clf.parameters(), 'lr': args.init_lr*0.1},
-            ]
-            if not args.label_lang_sup:
-                param_list.append({'params': model.obj_clf.parameters(), 'lr': args.init_lr})
-            if args.anchors == 'cot':
-                param_list.append({'params': model.parallel_embedding.parameters(), 'lr': args.init_lr})
-                param_list.append({'params': model.object_language_clf_parallel.parameters(), 'lr': args.init_lr})
-                param_list.append({'params': model.fc_out.parameters(), 'lr': args.init_lr})
+        param_list = adjust_lr(model, args)
 
     optimizer = optim.Adam(param_list, lr=args.init_lr)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [40, 50, 60, 70, 80, 90], gamma=0.65)
@@ -206,6 +208,12 @@ if __name__ == '__main__':
         print("Start Loading the P++ pre-trained weights .........")
         model.load_state_dict(torch.load(args.freezed_pointnet_weights)['model'], strict=False)
         print("---- Loading the P++ pre-trained weights finished ----")
+
+    if args.vil_flag and args.dist_type == "teacher_student":
+        print("Student-Teacher Distillation is activated !!!!!")
+        print("Start Loading the Teacher pre-trained weights .........")
+        model.model_teacher.load_state_dict(torch.load(args.teacher_weights)['model'], strict=True)
+        print("---- Loading the Teacher pre-trained weights finished ----")
 
     if args.resume_path:
         warnings.warn('Resuming assumes that the BEST per-val model is loaded!')

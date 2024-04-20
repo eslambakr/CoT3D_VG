@@ -138,6 +138,8 @@ if __name__ == '__main__':
 
         if args.anchors == 'cot':
             cot_names = ["object_language_clf.", "object_language_clf_2d.", "mmt."]
+        else:
+            cot_names = []
 
         backbone_param, cot_param, rest_param = [], [], []
         for kv in model.named_parameters():

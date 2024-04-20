@@ -101,6 +101,10 @@ def parse_arguments(notebook_options=None):
                         help="Should be activated only with teacher. This is the path for the precomputed features for each cls category.")
     parser.add_argument('--category_file', type=str, default="none", 
                         help="Should be activated only with teacher. This is the path for the category_file.")
+    parser.add_argument('--distill_cross_attns', type=float, default=0.0, help="distill_cross_attns")
+    parser.add_argument('--distill_self_attns', type=float, default=0.0, help="distill_self_attns")
+    parser.add_argument('--distill_hiddens', type=float, default=0.0, help="distill_hiddens")
+    parser.add_argument('--teacher_weights', type=str, default=None, help="Teacher pretrained wieghts path. This trick is proposed by VIL.")
 
     #
     # Model arguments

@@ -74,7 +74,7 @@ class MMT_ReferIt3DNet(nn.Module):
             self.n_obj_classes = num_class + 1  # +1 to include the no_obj class
         else:
             self.lang_out = 1
-            self.n_obj_classes = num_class
+            self.n_obj_classes = num_class + 1  # +1 to include the no_obj class
         
         # Encoders for single object
         self.object_encoder = object_encoder
@@ -139,7 +139,7 @@ class MMT_ReferIt3DNet(nn.Module):
         #additional for COT: 
         #ADD LANGUAGE
         lang_out_dim = 768
-        if self.is_nr:
+        if self.is_nr and self.predict_lang_anchors:
             self.parallel_language_embedding = nn.Sequential(nn.Linear(lang_out_dim, 128),
                                                              nn.BatchNorm1d(128),
                                                              nn.ReLU(), 
@@ -237,7 +237,7 @@ class MMT_ReferIt3DNet(nn.Module):
                 result['aux_lang_logits'] = None
         '''
         if self.language_clf is not None:
-            if self.is_nr:  #Just change the output dimension to make it Number Of anchors + target instead of target only.
+            if self.is_nr and self.predict_lang_anchors:  #Just change the output dimension to make it Number Of anchors + target instead of target only.
                 lang_parallel_embd = self.parallel_language_embedding(text_bert_out[:,0,:]) 
                 AUX_LANG_LOGITS    = self.language_clf(lang_parallel_embd)   # [B, num_cls*trg_seq_length]
                 # sampled_embd = AUX_LANG_LOGITS.contiguous().view(-1, self.n_obj_classes, self.lang_out).permute(0, 2, 1)  # [N, num_cls, anchors_length+1] --> [N, anchors_length+1, num_cls]

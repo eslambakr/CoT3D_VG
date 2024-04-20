@@ -8,14 +8,15 @@ sys.path.append(os.path.join(os.getcwd(), "lib")) # HACK add the lib folder
 from models.backbone_module import Pointnet2Backbone
 from models.voting_module import VotingModule
 from models.proposal_module import ProposalModule
-from models.lang_module import LangModule
+from models.lang_module import LangModule, LangModuleCoTPath
 from models.match_module import MatchModule
 
 class RefNet(nn.Module):
     def __init__(self, num_class, num_heading_bin, num_size_cluster, mean_size_arr, 
-    input_feature_dim=0, num_proposal=128, vote_factor=1, sampling="vote_fps",
-    use_lang_classifier=True, use_bidir=False, no_reference=False,
-    emb_size=300, hidden_size=256):
+                 input_feature_dim=0, num_proposal=128, vote_factor=1, sampling="vote_fps",
+                 use_lang_classifier=True, use_bidir=False, no_reference=False,
+                 emb_size=300, hidden_size=256,
+                 anchors=None, cot_type=None, predict_lang_anchors=None, max_num_anchors=None, feedcotpath=None):
         super().__init__()
 
         self.num_class = num_class
@@ -30,6 +31,13 @@ class RefNet(nn.Module):
         self.use_lang_classifier = use_lang_classifier
         self.use_bidir = use_bidir      
         self.no_reference = no_reference
+
+        # CoT:
+        self.anchors = anchors
+        self.cot_type = cot_type
+        self.predict_lang_anchors = predict_lang_anchors
+        self.max_num_anchors = max_num_anchors
+        self.feedcotpath = feedcotpath
 
 
         # --------- PROPOSAL GENERATION ---------
@@ -47,10 +55,14 @@ class RefNet(nn.Module):
             # Encode the input descriptions into vectors
             # (including attention and language classification)
             self.lang = LangModule(num_class, use_lang_classifier, use_bidir, emb_size, hidden_size)
+            if self.feedcotpath:
+                self.lang_cot_path = LangModuleCoTPath(num_class, use_lang_classifier, use_bidir, emb_size, hidden_size)
 
             # --------- PROPOSAL MATCHING ---------
             # Match the generated proposals and select the most confident ones
-            self.match = MatchModule(num_proposals=num_proposal, lang_size=(1 + int(self.use_bidir)) * hidden_size)
+            self.match = MatchModule(num_proposals=num_proposal, lang_size=(1 + int(self.use_bidir)) * hidden_size,
+                                     anchors=self.anchors, cot_type=self.cot_type, max_num_anchors=self.max_num_anchors,
+                                     feedcotpath=self.feedcotpath)
 
     def forward(self, data_dict):
         """ Forward pass of the network
@@ -105,6 +117,8 @@ class RefNet(nn.Module):
 
             # --------- LANGUAGE ENCODING ---------
             data_dict = self.lang(data_dict)
+            if self.feedcotpath:
+                data_dict = self.lang_cot_path(data_dict)
 
             #######################################
             #                                     #

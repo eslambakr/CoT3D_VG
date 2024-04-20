@@ -90,6 +90,16 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--patience', type=int, default=100, help='if test-acc does not improve for patience consecutive'
                                                                  'epoch, stop training. fixed step if patience==max epoch')
     parser.add_argument("--warmup", type=str2bool, default=True, help="if lr linear warmup.")
+    parser.add_argument('--anchors_ids_type', type=str, default=False,  help="Four options are available: [pseudoWneg_old, pseudoWneg, pseudoWOneg, ourPathGTids, GT]\
+                         1- pseudo w negatives old file. 2- pseudo w negatives. 3- pseudo w/o negatives. \
+                         4- our path combined with GT boxes ids. 5- GT path combined with GT boxes ids.")
+    parser.add_argument('--obj_cls_post', type=str2bool, default=False, 
+                        help="If activated this means we will add another cls head after multi-modal transformer. We have done this to mimic VIL.")
+    parser.add_argument('--scanrefer', type=str2bool, default=False, help="Train on scanrefer dataset. So the loading part of the data will be changed.")
+    parser.add_argument('--feedGTPath', type=str2bool, default=False, help="Feed the GT logical path as an input to the model.")
+    parser.add_argument('--multicls_multilabel', type=str2bool, default=False, help="Remove duplicates from the path and deal with it as multi-labels.")
+    parser.add_argument('--remove_repeated_anchors', type=str2bool, default=False, help="Remove duplicates from the path and sample anchor_id to assign it.")
+    parser.add_argument('--include_anchor_distractors', type=str2bool, default=False, help="This flag determines whether we should include the anchors' distractors or not.")
 
     #
     # Model arguments

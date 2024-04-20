@@ -36,7 +36,7 @@ def dataset_to_dataloader(dataset, split, batch_size, n_workers, pin_memory=Fals
     :param seed:
     :return:
     """
-    batch_size_multiplier = 1 if split == 'train' else 2
+    batch_size_multiplier = 1 if split == 'train' else 1
     b_size = int(batch_size_multiplier * batch_size)
 
     drop_last = False

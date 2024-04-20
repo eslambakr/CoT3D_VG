@@ -350,6 +350,13 @@ class ListeningDataset(Dataset):
             res['obj_masks'] = np.full((self.max_context_size), True)
 
             if ("teacher" in self.dist_type):
+                if is_nr3d and self.anchors_mode != 'none':
+                    # Add pad
+                    self.cat2int['pad'] = len(self.cat2int)
+                    self.int2cat.append('pad')
+                    if self.cat2vec is not None:
+                        self.cat2vec['pad'] = [-2]*300
+
                 res['class_labels_glove_embed'] = torch.FloatTensor([self.cat2vec[self.int2cat[x]] for x in res['class_labels']])
 
         if self.visualization:

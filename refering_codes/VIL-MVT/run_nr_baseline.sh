@@ -1,12 +1,12 @@
 module load cuda/10.1.243
 
-cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
+cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/VIL-MVT
 /home/abdelrem/anaconda3/envs/refer3d_cuda/bin/python -u train_referit3d.py \
     -scannet-file /home/abdelrem/3d_codes/scannet_dataset/scannet/scan_4_nr3d_org/keep_all_points_00_view_with_global_scan_alignment/keep_all_points_00_view_with_global_scan_alignment.pkl \
     -referit3D-file /home/abdelrem/3d_codes/CoT3D_VG/extract_anchors/nr3d_cot_ref_paraphrases_num_anchors.csv \
     --bert-pretrain-path /home/abdelrem/3d_codes/MVT-3DVG/weights/bert-base-uncased/ \
-    --log-dir logs/MVT_nr3d_cot_cross_10%_filtered_anchors=7_CoTLang_drop15%_vispcnoise0% \
-    --n-workers 8 \
+    --log-dir logs/nr/student_vil_nr3d_bs24_cot_data10%_1anchor \
+    --n-workers 16 \
     --model 'referIt3DNet_transformer' \
     --unit-sphere-norm True \
     --batch-size 24 \
@@ -23,14 +23,20 @@ cd /home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG
     --predict_lang_anchors True \
     --lang_filter_objs False \
     --visaug_shuffle_mode 'none' \
-    --shuffle_objects_percentage 0 \
-    --visaug_extracted_obj_path '/home/abdelrem/3d_codes/CoT3D_VG/data/nr3d/' \
+    --visaug_extracted_obj_path '/home/abdelrem/3d_codes/CoT3D_VG/data/sr3d/' \
     --visaug_pc_augment False \
     --train_data_percent 0.1 \
-    --max_num_anchors 7 \
-    --dropout-rate 0.15 \
-    --textaug_paraphrase_percentage 0 \
-    --target_aug_percentage 0 \
-    --gaussian_latent False \
-    --distractor_aux_loss_flag False \
-    --train_data_repeatation 1 
+    --max_num_anchors 1 \
+    --vil_flag True \
+    --train_objcls_alone_flag False \
+    --freezed_pointnet_weights 'none' \
+    --obj_cls_post False \
+    --dist_type "teacher_student" \
+    --cat2glove "/home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/cat2glove42b.json" \
+    --category_file "/home/abdelrem/3d_codes/vil3d_preprocessed_data/annotations/meta_data/scannetv2_raw_categories.json" \
+    --distill_cross_attns 1 \
+    --distill_self_attns 1 \
+    --distill_hiddens 0.02 \
+    --teacher_weights "logs/nr/teacher_vil_nr3d_bs24_cot_data100%/08-02-2023-14-12-23/checkpoints/best_model.pth"
+    #--teacher_weights "logs/sr/teacher_vil_sr3d_bs24_cot_data100%_ClsLossPost/07-30-2023-16-26-54/checkpoints/best_model.pth"
+    

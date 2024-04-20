@@ -188,6 +188,24 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
     batch_keys = make_batch_keys(args, extras)
 
     for batch in tqdm.tqdm(data_loader):
+        print("="*50)
+        print("batch keys = ", batch.keys())
+        # Read class names maping:
+        cls_name_map_path = "/home/abdelrem/3d_codes/CoT3D_VG/refering_codes/MVT-3DVG/referit3d/data/mappings/scannet_instance_class_to_semantic_class.json"
+        import json
+        # Read the JSON file into a dictionary
+        with open(cls_name_map_path, 'r') as json_file:
+            data_dict = json.load(json_file)
+        # Extract keys from the dictionary and convert them to a list
+        keys_list = list(data_dict.keys())
+        keys_list.append("no_obj")
+        keys_list.append("monitor")
+        active_objects = np.array(keys_list)
+        print(batch['scan_id'], "_", batch['target_class'], "_", batch['target_pos'], "_", batch['anchor_classes'], "_", 
+              batch['anchors_pos'], "_", batch['tokens'], "_", batch['class_labels'])
+        print("anchors are = ", active_objects[batch['target_class'][0]])
+        print("anchors are = ", active_objects[batch['anchor_classes'][0].to(dtype=torch.long)])
+        print("active_objects = ", active_objects[batch['class_labels'][0].to(dtype=torch.long)])
         # Move data to gpu
         for k in batch_keys:
             if isinstance(batch[k], list) and k in extras:

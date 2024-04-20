@@ -1,12 +1,11 @@
 # CoT3DRef: Chain-of-Thoughts Data-Efficient 3D Visual Grounding
-This is the official implementation for our paper
+This is the official implementation for our ICLR 2024 paper
 
 [**"CoT3DRef: Chain-of-Thoughts Data-Efficient 3D Visual Grounding"**]()
 
-:satellite: [![Website](https://img.shields.io/badge/Project-Website-87CEEB)]() &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-:book: [![paper](https://img.shields.io/badge/arXiv-Paper-<COLOR>.svg)]() &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+:satellite: [![Website](https://eslambakr.github.io/cot3dref.github.io/)]() &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+:open_book: [![paper](https://arxiv.org/abs/2310.06214)]() &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
 
-## :loudspeaker: News
 
 ## :books: Synopsis
 <p align="center">
@@ -22,15 +21,18 @@ To achieve this objective, we formulate the 3D visual grounding problem as a seq
 
 ## Model Zoo
 
-### MVT-Nr3D:
+### MVT-Nr3D: [(Weights and logs)](https://drive.google.com/drive/folders/1jjg8uJbJa-A-V33Tkfl9gNV_L0QGD_G0?usp=sharing "Weights and logs")
 | **Method-Data Percentage** | **10%** | **40%** | **70%** | **100%** |
 |----------------------------|---------|---------|---------|----------|
 | **MVT Baseline**           | 27.56   | 41.64   | 51.93   | 55.22    |
 | **MVT + Pseudo Labels**    | 38.16   | 54.83   | 58.81   | 60.36    |
 | **MVT + GT Labels**        | 37.23   | 53.89   | 62.95   | 64.36    |
 
-### MVT-Sr3D:
-
+### MVT-Sr3D: [(Weights and logs)](https://drive.google.com/drive/folders/129VYqGFjqWqJZt7Mtq8oFXjlcQADr74O?usp=sharing "Weights and logs")
+| **Method-Data Percentage** | **10%** | **40%** | **70%** | **100%** |
+|----------------------------|---------|---------|---------|----------|
+| **MVT Baseline**           | 48.75   | 65.03   | 65.08   | 66.05    |
+| **MVT + GT Labels**        | 66.37   | 72.78   | 73.53   | 73.23    |
 
 ## Installation and Data Preparation
 Please refer the installation and data preparation from [referit3d](https://github.com/referit3d/referit3d).
@@ -169,10 +171,15 @@ The project is built based on the following repository:
 * [MVT-3DVG](https://github.com/sega-hsj/MVT-3DVG).
 
 ## :telephone: Contact us
+eslam.abdelrahman@kaust.edu.sa
 
 ## :mailbox_with_mail: Citation
 
 ```
-
+@article{bakr2023cot3dref,
+  title={CoT3DRef: Chain-of-Thoughts Data-Efficient 3D Visual Grounding},
+  author={Bakr, Eslam Mohamed and Ayman, Mohamed and Ahmed, Mahmoud and Slim, Habib and Elhoseiny, Mohamed},
+  journal={arXiv preprint arXiv:2310.06214},
+  year={2023}
+}
 ```
-# CoT3DRef

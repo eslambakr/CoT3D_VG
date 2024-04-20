@@ -3,8 +3,8 @@ This is the official implementation for our ICLR 2024 paper
 
 [**"CoT3DRef: Chain-of-Thoughts Data-Efficient 3D Visual Grounding"**]()
 
-:satellite: [![Website](https://eslambakr.github.io/cot3dref.github.io/)]() &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-:open_book: [![paper](https://arxiv.org/abs/2310.06214)]() &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+:satellite: [![Website](https://img.shields.io/badge/Project-Website-87CEEB)](https://eslambakr.github.io/cot3dref.github.io/) &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+:book: [![paper](https://img.shields.io/badge/arXiv-Paper-<COLOR>.svg)](https://arxiv.org/abs/2310.06214) &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
 
 
 ## :books: Synopsis
